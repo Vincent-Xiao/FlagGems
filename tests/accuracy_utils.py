@@ -1,5 +1,6 @@
 import importlib
 import itertools
+import os
 import random
 
 import numpy as np
@@ -250,8 +251,21 @@ def unsqueeze_tensor(inp, max_ndim):
 
 
 def init_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
+    worker_rank = get_parallel_worker_rank()
+    local_seed = seed + worker_rank
+    random.seed(local_seed)
+    np.random.seed(local_seed)
+    torch.manual_seed(local_seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+        torch.cuda.manual_seed_all(local_seed)
+
+
+def get_parallel_worker_rank() -> int:
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "")
+    if worker_id.startswith("gw"):
+        return int(worker_id[2:])
+    return int(os.environ.get("FLAGGEMS_PARALLEL_RANK", "0"))
+
+
+def get_parallel_world_size() -> int:
+    return int(os.environ.get("FLAGGEMS_PARALLEL_WORLD_SIZE", "1"))
