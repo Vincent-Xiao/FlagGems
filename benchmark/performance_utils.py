@@ -446,10 +446,19 @@ class Benchmark:
 
         chunks = [[] for _ in range(num_buckets)]
         bucket_costs = [0] * num_buckets
+        bucket_counts = [0] * num_buckets
+        total_items = len(sorted_items)
+        low = total_items // num_buckets
+        high = low + 1
+        remainder = total_items % num_buckets
+        bucket_caps = [high if i < remainder else low for i in range(num_buckets)]
+
         for idx_shape in sorted_items:
-            target = min(range(num_buckets), key=lambda i: bucket_costs[i])
+            available = [i for i in range(num_buckets) if bucket_counts[i] < bucket_caps[i]]
+            target = min(available, key=lambda i: bucket_costs[i])
             chunks[target].append(idx_shape)
             bucket_costs[target] += estimate_shape_cost(idx_shape[1])
+            bucket_counts[target] += 1
 
         for bucket in chunks:
             bucket.sort(key=lambda x: x[0])
