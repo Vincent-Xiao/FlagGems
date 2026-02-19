@@ -420,18 +420,49 @@ class Benchmark:
 
     def _split_shapes_evenly(self, num_buckets: int):
         indexed_shapes = list(enumerate(self.shapes))
-        total = len(indexed_shapes)
-        if total == 0:
+        if not indexed_shapes:
             return []
 
-        chunks = []
-        start = 0
-        for bucket_idx in range(num_buckets):
-            chunk_size = total // num_buckets + (1 if bucket_idx < total % num_buckets else 0)
-            end = start + chunk_size
-            chunks.append(indexed_shapes[start:end])
-            start = end
-        return [chunk for chunk in chunks if chunk]
+        def estimate_shape_cost(shape):
+            if len(shape) == 4 and self.op_name in {"mm", "addmm", "bmm", "baddbmm"}:
+                _, m, n, k = shape
+                if self.op_name in {"mm", "bmm"}:
+                    return m * n * k * 2
+                return m * n * (2 * k + 1)
+
+            cost = 1
+            for dim in shape:
+                if isinstance(dim, bool):
+                    continue
+                if isinstance(dim, (int, float)):
+                    cost *= max(1, int(dim))
+            return cost
+
+        sorted_items = sorted(
+            indexed_shapes,
+            key=lambda idx_shape: estimate_shape_cost(idx_shape[1]),
+            reverse=True,
+        )
+
+        chunks = [[] for _ in range(num_buckets)]
+        bucket_costs = [0] * num_buckets
+        bucket_counts = [0] * num_buckets
+        total_items = len(sorted_items)
+        low = total_items // num_buckets
+        high = low + 1
+        remainder = total_items % num_buckets
+        bucket_caps = [high if i < remainder else low for i in range(num_buckets)]
+
+        for idx_shape in sorted_items:
+            available = [i for i in range(num_buckets) if bucket_counts[i] < bucket_caps[i]]
+            target = min(available, key=lambda i: bucket_costs[i])
+            chunks[target].append(idx_shape)
+            bucket_costs[target] += estimate_shape_cost(idx_shape[1])
+            bucket_counts[target] += 1
+
+        for bucket in chunks:
+            bucket.sort(key=lambda x: x[0])
+        return [bucket for bucket in chunks if bucket]
 
     def _run_parallel_worker_subprocess(
         self,
