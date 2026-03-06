@@ -35,3 +35,12 @@ tests/*.json
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
+
+# flagtune: ignore everything except selected files/dirs
+flagtune/**
+!flagtune/processing/
+!flagtune/processing/**
+!flagtune/shape-config/
+flagtune/shape-config/**
+!flagtune/shape-config/qwen3.5.txt
+!flagtune/pretune.sh

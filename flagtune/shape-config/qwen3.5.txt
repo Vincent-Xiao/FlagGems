@@ -1,0 +1,335 @@
+flag_gems.ops.addmm.addmm, [shape info]: [-, 65536, 432, 1152](batch, M, N, K), [count]: 27
+flag_gems.ops.addmm.addmm, [shape info]: [-, 65536, 538, 1152](batch, M, N, K), [count]: 27
+flag_gems.ops.addmm.addmm, [shape info]: [-, 16384, 576, 4608](batch, M, N, K), [count]: 1
+flag_gems.ops.addmm.addmm, [shape info]: [-, 65536, 1152, 1536](batch, M, N, K), [count]: 1
+flag_gems.ops.embedding.embedding, [shape info]: [-, 16384, 2560, 4096](batch, M, N, K), [count]: 3
+flag_gems.ops.embedding.embedding, [shape info]: [-, 16384, 2560, 4096], [count]: 2
+flag_gems.ops.fill.fill_scalar_, [shape info]: [-, 16384, 2560, 4096], [count]: 1
+flag_gems.ops.fill.fill_tensor_, [shape info]: [-, 336, 2560, 4096], [count]: 1
+flag_gems.ops.index_put.index_put_, [shape info]: [-, 16384, 4096, 1024], [count]: 692
+flag_gems.ops.index_put.index_put_, [shape info]: [-, 14515, 4096, 1024], [count]: 33
+flag_gems.ops.index_put.index_put_, [shape info]: [-, 4108, 4096, 1024](batch, M, N, K), [count]: 9
+flag_gems.ops.index_put.index_put_, [shape info]: [-, 4108, 4096, 1024], [count]: 1
+flag_gems.ops.masked_fill.masked_fill_, [shape info]: [-, 16384, 2560, 4096](batch, M, N, K), [count]: 24
+flag_gems.ops.masked_fill.masked_fill_, [shape info]: [-, 16384, 2560, 4096], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16384, 2560, 4096](batch, M, N, K), [count]: 2845
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16384, 4096, 1024], [count]: 2639
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16384, 16, 4096](batch, M, N, K), [count]: 1781
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16384, 4096, 1024](batch, M, N, K), [count]: 1436
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16384, 2560, 4096], [count]: 1414
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16384, 16, 4096], [count]: 1146
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2, 2560, 4096](batch, M, N, K), [count]: 240
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2, 4096, 1024](batch, M, N, K), [count]: 240
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4, 4096, 1024](batch, M, N, K), [count]: 240
+flag_gems.ops.mm.general_mm, [shape info]: [-, 48, 4096, 1024](batch, M, N, K), [count]: 240
+flag_gems.ops.mm.general_mm, [shape info]: [-, 1, 2560, 4096](batch, M, N, K), [count]: 239
+flag_gems.ops.mm.general_mm, [shape info]: [-, 208, 4096, 1024](batch, M, N, K), [count]: 239
+flag_gems.ops.mm.general_mm, [shape info]: [-, 368, 4096, 1024](batch, M, N, K), [count]: 239
+flag_gems.ops.mm.general_mm, [shape info]: [-, 384, 4096, 1024](batch, M, N, K), [count]: 239
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4, 2560, 4096](batch, M, N, K), [count]: 239
+flag_gems.ops.mm.general_mm, [shape info]: [-, 40, 2560, 4096](batch, M, N, K), [count]: 239
+flag_gems.ops.mm.general_mm, [shape info]: [-, 40, 4096, 1024](batch, M, N, K), [count]: 239
+flag_gems.ops.mm.general_mm, [shape info]: [-, 48, 2560, 4096](batch, M, N, K), [count]: 239
+flag_gems.ops.mm.general_mm, [shape info]: [-, 1, 4096, 1024](batch, M, N, K), [count]: 238
+flag_gems.ops.mm.general_mm, [shape info]: [-, 208, 2560, 4096](batch, M, N, K), [count]: 238
+flag_gems.ops.mm.general_mm, [shape info]: [-, 104, 2560, 4096](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 104, 4096, 1024](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16, 4096, 1024](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 32, 2560, 4096](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 32, 4096, 1024](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 352, 4096, 1024](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 480, 2560, 4096](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 64, 2560, 4096](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 96, 2560, 4096](batch, M, N, K), [count]: 237
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16, 2560, 4096](batch, M, N, K), [count]: 236
+flag_gems.ops.mm.general_mm, [shape info]: [-, 184, 2560, 4096](batch, M, N, K), [count]: 236
+flag_gems.ops.mm.general_mm, [shape info]: [-, 336, 4096, 1024](batch, M, N, K), [count]: 236
+flag_gems.ops.mm.general_mm, [shape info]: [-, 416, 4096, 1024](batch, M, N, K), [count]: 236
+flag_gems.ops.mm.general_mm, [shape info]: [-, 56, 2560, 4096](batch, M, N, K), [count]: 236
+flag_gems.ops.mm.general_mm, [shape info]: [-, 56, 4096, 1024](batch, M, N, K), [count]: 236
+flag_gems.ops.mm.general_mm, [shape info]: [-, 120, 4096, 1024](batch, M, N, K), [count]: 235
+flag_gems.ops.mm.general_mm, [shape info]: [-, 184, 4096, 1024](batch, M, N, K), [count]: 235
+flag_gems.ops.mm.general_mm, [shape info]: [-, 416, 2560, 4096](batch, M, N, K), [count]: 235
+flag_gems.ops.mm.general_mm, [shape info]: [-, 480, 4096, 1024](batch, M, N, K), [count]: 235
+flag_gems.ops.mm.general_mm, [shape info]: [-, 120, 2560, 4096](batch, M, N, K), [count]: 234
+flag_gems.ops.mm.general_mm, [shape info]: [-, 144, 2560, 4096](batch, M, N, K), [count]: 234
+flag_gems.ops.mm.general_mm, [shape info]: [-, 144, 4096, 1024](batch, M, N, K), [count]: 234
+flag_gems.ops.mm.general_mm, [shape info]: [-, 8, 2560, 4096](batch, M, N, K), [count]: 234
+flag_gems.ops.mm.general_mm, [shape info]: [-, 96, 4096, 1024](batch, M, N, K), [count]: 234
+flag_gems.ops.mm.general_mm, [shape info]: [-, 384, 2560, 4096](batch, M, N, K), [count]: 233
+flag_gems.ops.mm.general_mm, [shape info]: [-, 400, 2560, 4096](batch, M, N, K), [count]: 233
+flag_gems.ops.mm.general_mm, [shape info]: [-, 448, 2560, 4096](batch, M, N, K), [count]: 233
+flag_gems.ops.mm.general_mm, [shape info]: [-, 8, 4096, 1024](batch, M, N, K), [count]: 233
+flag_gems.ops.mm.general_mm, [shape info]: [-, 136, 2560, 4096](batch, M, N, K), [count]: 232
+flag_gems.ops.mm.general_mm, [shape info]: [-, 24, 4096, 1024](batch, M, N, K), [count]: 232
+flag_gems.ops.mm.general_mm, [shape info]: [-, 336, 2560, 4096](batch, M, N, K), [count]: 232
+flag_gems.ops.mm.general_mm, [shape info]: [-, 448, 4096, 1024](batch, M, N, K), [count]: 232
+flag_gems.ops.mm.general_mm, [shape info]: [-, 80, 2560, 4096](batch, M, N, K), [count]: 232
+flag_gems.ops.mm.general_mm, [shape info]: [-, 80, 4096, 1024](batch, M, N, K), [count]: 232
+flag_gems.ops.mm.general_mm, [shape info]: [-, 136, 4096, 1024](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 24, 2560, 4096](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 240, 4096, 1024](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 248, 2560, 4096](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 248, 4096, 1024](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 288, 2560, 4096](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 320, 4096, 1024](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 352, 2560, 4096](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 464, 2560, 4096](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 464, 4096, 1024](batch, M, N, K), [count]: 231
+flag_gems.ops.mm.general_mm, [shape info]: [-, 152, 4096, 1024](batch, M, N, K), [count]: 230
+flag_gems.ops.mm.general_mm, [shape info]: [-, 240, 2560, 4096](batch, M, N, K), [count]: 230
+flag_gems.ops.mm.general_mm, [shape info]: [-, 368, 2560, 4096](batch, M, N, K), [count]: 230
+flag_gems.ops.mm.general_mm, [shape info]: [-, 72, 4096, 1024](batch, M, N, K), [count]: 230
+flag_gems.ops.mm.general_mm, [shape info]: [-, 112, 2560, 4096](batch, M, N, K), [count]: 229
+flag_gems.ops.mm.general_mm, [shape info]: [-, 224, 2560, 4096](batch, M, N, K), [count]: 229
+flag_gems.ops.mm.general_mm, [shape info]: [-, 224, 4096, 1024](batch, M, N, K), [count]: 229
+flag_gems.ops.mm.general_mm, [shape info]: [-, 288, 4096, 1024](batch, M, N, K), [count]: 229
+flag_gems.ops.mm.general_mm, [shape info]: [-, 112, 4096, 1024](batch, M, N, K), [count]: 228
+flag_gems.ops.mm.general_mm, [shape info]: [-, 72, 2560, 4096](batch, M, N, K), [count]: 228
+flag_gems.ops.mm.general_mm, [shape info]: [-, 152, 2560, 4096](batch, M, N, K), [count]: 227
+flag_gems.ops.mm.general_mm, [shape info]: [-, 320, 2560, 4096](batch, M, N, K), [count]: 227
+flag_gems.ops.mm.general_mm, [shape info]: [-, 88, 2560, 4096](batch, M, N, K), [count]: 226
+flag_gems.ops.mm.general_mm, [shape info]: [-, 176, 2560, 4096](batch, M, N, K), [count]: 225
+flag_gems.ops.mm.general_mm, [shape info]: [-, 176, 4096, 1024](batch, M, N, K), [count]: 225
+flag_gems.ops.mm.general_mm, [shape info]: [-, 192, 4096, 1024](batch, M, N, K), [count]: 225
+flag_gems.ops.mm.general_mm, [shape info]: [-, 216, 2560, 4096](batch, M, N, K), [count]: 225
+flag_gems.ops.mm.general_mm, [shape info]: [-, 192, 2560, 4096](batch, M, N, K), [count]: 224
+flag_gems.ops.mm.general_mm, [shape info]: [-, 216, 4096, 1024](batch, M, N, K), [count]: 224
+flag_gems.ops.mm.general_mm, [shape info]: [-, 304, 2560, 4096](batch, M, N, K), [count]: 224
+flag_gems.ops.mm.general_mm, [shape info]: [-, 496, 2560, 4096](batch, M, N, K), [count]: 224
+flag_gems.ops.mm.general_mm, [shape info]: [-, 496, 4096, 1024](batch, M, N, K), [count]: 224
+flag_gems.ops.mm.general_mm, [shape info]: [-, 128, 2560, 4096](batch, M, N, K), [count]: 223
+flag_gems.ops.mm.general_mm, [shape info]: [-, 128, 4096, 1024](batch, M, N, K), [count]: 223
+flag_gems.ops.mm.general_mm, [shape info]: [-, 200, 2560, 4096](batch, M, N, K), [count]: 223
+flag_gems.ops.mm.general_mm, [shape info]: [-, 200, 4096, 1024](batch, M, N, K), [count]: 223
+flag_gems.ops.mm.general_mm, [shape info]: [-, 400, 4096, 1024](batch, M, N, K), [count]: 223
+flag_gems.ops.mm.general_mm, [shape info]: [-, 88, 4096, 1024](batch, M, N, K), [count]: 223
+flag_gems.ops.mm.general_mm, [shape info]: [-, 256, 4096, 1024](batch, M, N, K), [count]: 222
+flag_gems.ops.mm.general_mm, [shape info]: [-, 512, 2560, 4096](batch, M, N, K), [count]: 222
+flag_gems.ops.mm.general_mm, [shape info]: [-, 432, 4096, 1024](batch, M, N, K), [count]: 221
+flag_gems.ops.mm.general_mm, [shape info]: [-, 160, 2560, 4096](batch, M, N, K), [count]: 220
+flag_gems.ops.mm.general_mm, [shape info]: [-, 160, 4096, 1024](batch, M, N, K), [count]: 220
+flag_gems.ops.mm.general_mm, [shape info]: [-, 256, 2560, 4096](batch, M, N, K), [count]: 220
+flag_gems.ops.mm.general_mm, [shape info]: [-, 232, 2560, 4096](batch, M, N, K), [count]: 219
+flag_gems.ops.mm.general_mm, [shape info]: [-, 304, 4096, 1024](batch, M, N, K), [count]: 219
+flag_gems.ops.mm.general_mm, [shape info]: [-, 512, 4096, 1024](batch, M, N, K), [count]: 219
+flag_gems.ops.mm.general_mm, [shape info]: [-, 272, 4096, 1024](batch, M, N, K), [count]: 218
+flag_gems.ops.mm.general_mm, [shape info]: [-, 232, 4096, 1024](batch, M, N, K), [count]: 215
+flag_gems.ops.mm.general_mm, [shape info]: [-, 272, 2560, 4096](batch, M, N, K), [count]: 215
+flag_gems.ops.mm.general_mm, [shape info]: [-, 432, 2560, 4096](batch, M, N, K), [count]: 215
+flag_gems.ops.mm.general_mm, [shape info]: [-, 168, 2560, 4096](batch, M, N, K), [count]: 208
+flag_gems.ops.mm.general_mm, [shape info]: [-, 168, 4096, 1024](batch, M, N, K), [count]: 199
+flag_gems.ops.mm.general_mm, [shape info]: [-, 64, 4096, 1024](batch, M, N, K), [count]: 199
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4, 16, 4096](batch, M, N, K), [count]: 180
+flag_gems.ops.mm.general_mm, [shape info]: [-, 40, 16, 4096](batch, M, N, K), [count]: 179
+flag_gems.ops.mm.general_mm, [shape info]: [-, 48, 16, 4096](batch, M, N, K), [count]: 179
+flag_gems.ops.mm.general_mm, [shape info]: [-, 1, 16, 4096](batch, M, N, K), [count]: 178
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2, 16, 4096](batch, M, N, K), [count]: 178
+flag_gems.ops.mm.general_mm, [shape info]: [-, 208, 16, 4096](batch, M, N, K), [count]: 178
+flag_gems.ops.mm.general_mm, [shape info]: [-, 104, 16, 4096](batch, M, N, K), [count]: 175
+flag_gems.ops.mm.general_mm, [shape info]: [-, 184, 16, 4096](batch, M, N, K), [count]: 175
+flag_gems.ops.mm.general_mm, [shape info]: [-, 32, 16, 4096](batch, M, N, K), [count]: 174
+flag_gems.ops.mm.general_mm, [shape info]: [-, 8, 16, 4096](batch, M, N, K), [count]: 174
+flag_gems.ops.mm.general_mm, [shape info]: [-, 24, 16, 4096](batch, M, N, K), [count]: 173
+flag_gems.ops.mm.general_mm, [shape info]: [-, 56, 16, 4096](batch, M, N, K), [count]: 173
+flag_gems.ops.mm.general_mm, [shape info]: [-, 248, 16, 4096](batch, M, N, K), [count]: 172
+flag_gems.ops.mm.general_mm, [shape info]: [-, 480, 16, 4096](batch, M, N, K), [count]: 171
+flag_gems.ops.mm.general_mm, [shape info]: [-, 72, 16, 4096](batch, M, N, K), [count]: 170
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16, 16, 4096](batch, M, N, K), [count]: 169
+flag_gems.ops.mm.general_mm, [shape info]: [-, 416, 16, 4096](batch, M, N, K), [count]: 169
+flag_gems.ops.mm.general_mm, [shape info]: [-, 384, 16, 4096](batch, M, N, K), [count]: 167
+flag_gems.ops.mm.general_mm, [shape info]: [-, 80, 16, 4096](batch, M, N, K), [count]: 167
+flag_gems.ops.mm.general_mm, [shape info]: [-, 88, 16, 4096](batch, M, N, K), [count]: 167
+flag_gems.ops.mm.general_mm, [shape info]: [-, 112, 16, 4096](batch, M, N, K), [count]: 166
+flag_gems.ops.mm.general_mm, [shape info]: [-, 176, 16, 4096](batch, M, N, K), [count]: 166
+flag_gems.ops.mm.general_mm, [shape info]: [-, 144, 16, 4096](batch, M, N, K), [count]: 165
+flag_gems.ops.mm.general_mm, [shape info]: [-, 240, 16, 4096](batch, M, N, K), [count]: 165
+flag_gems.ops.mm.general_mm, [shape info]: [-, 224, 16, 4096](batch, M, N, K), [count]: 164
+flag_gems.ops.mm.general_mm, [shape info]: [-, 352, 16, 4096](batch, M, N, K), [count]: 164
+flag_gems.ops.mm.general_mm, [shape info]: [-, 400, 16, 4096](batch, M, N, K), [count]: 164
+flag_gems.ops.mm.general_mm, [shape info]: [-, 448, 16, 4096](batch, M, N, K), [count]: 164
+flag_gems.ops.mm.general_mm, [shape info]: [-, 464, 16, 4096](batch, M, N, K), [count]: 164
+flag_gems.ops.mm.general_mm, [shape info]: [-, 96, 16, 4096](batch, M, N, K), [count]: 164
+flag_gems.ops.mm.general_mm, [shape info]: [-, 120, 16, 4096](batch, M, N, K), [count]: 161
+flag_gems.ops.mm.general_mm, [shape info]: [-, 192, 16, 4096](batch, M, N, K), [count]: 161
+flag_gems.ops.mm.general_mm, [shape info]: [-, 336, 16, 4096](batch, M, N, K), [count]: 161
+flag_gems.ops.mm.general_mm, [shape info]: [-, 368, 16, 4096](batch, M, N, K), [count]: 161
+flag_gems.ops.mm.general_mm, [shape info]: [-, 152, 16, 4096](batch, M, N, K), [count]: 160
+flag_gems.ops.mm.general_mm, [shape info]: [-, 200, 16, 4096](batch, M, N, K), [count]: 159
+flag_gems.ops.mm.general_mm, [shape info]: [-, 320, 16, 4096](batch, M, N, K), [count]: 158
+flag_gems.ops.mm.general_mm, [shape info]: [-, 136, 16, 4096](batch, M, N, K), [count]: 157
+flag_gems.ops.mm.general_mm, [shape info]: [-, 288, 16, 4096](batch, M, N, K), [count]: 157
+flag_gems.ops.mm.general_mm, [shape info]: [-, 496, 16, 4096](batch, M, N, K), [count]: 157
+flag_gems.ops.mm.general_mm, [shape info]: [-, 128, 16, 4096](batch, M, N, K), [count]: 156
+flag_gems.ops.mm.general_mm, [shape info]: [-, 512, 16, 4096](batch, M, N, K), [count]: 155
+flag_gems.ops.mm.general_mm, [shape info]: [-, 272, 16, 4096](batch, M, N, K), [count]: 152
+flag_gems.ops.mm.general_mm, [shape info]: [-, 256, 16, 4096](batch, M, N, K), [count]: 151
+flag_gems.ops.mm.general_mm, [shape info]: [-, 304, 16, 4096](batch, M, N, K), [count]: 149
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4108, 2560, 4096](batch, M, N, K), [count]: 149
+flag_gems.ops.mm.general_mm, [shape info]: [-, 216, 16, 4096](batch, M, N, K), [count]: 148
+flag_gems.ops.mm.general_mm, [shape info]: [-, 160, 16, 4096](batch, M, N, K), [count]: 144
+flag_gems.ops.mm.general_mm, [shape info]: [-, 232, 16, 4096](batch, M, N, K), [count]: 143
+flag_gems.ops.mm.general_mm, [shape info]: [-, 64, 16, 4096](batch, M, N, K), [count]: 139
+flag_gems.ops.mm.general_mm, [shape info]: [-, 168, 16, 4096](batch, M, N, K), [count]: 136
+flag_gems.ops.mm.general_mm, [shape info]: [-, 432, 16, 4096](batch, M, N, K), [count]: 135
+flag_gems.ops.mm.general_mm, [shape info]: [-, 14515, 2560, 4096](batch, M, N, K), [count]: 114
+flag_gems.ops.mm.general_mm, [shape info]: [-, 14515, 4096, 1024], [count]: 113
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4108, 4096, 1024](batch, M, N, K), [count]: 102
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4108, 16, 4096](batch, M, N, K), [count]: 84
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4108, 2560, 4096], [count]: 77
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4108, 4096, 1024], [count]: 77
+flag_gems.ops.mm.general_mm, [shape info]: [-, 14515, 16, 4096](batch, M, N, K), [count]: 76
+flag_gems.ops.mm.general_mm, [shape info]: [-, 14515, 4096, 1024](batch, M, N, K), [count]: 58
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2048, 2560, 4096](batch, M, N, K), [count]: 58
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2048, 4096, 1024](batch, M, N, K), [count]: 54
+flag_gems.ops.mm.general_mm, [shape info]: [-, 14515, 16, 4096], [count]: 53
+flag_gems.ops.mm.general_mm, [shape info]: [-, 14515, 2560, 4096], [count]: 53
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2048, 16, 4096](batch, M, N, K), [count]: 40
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4108, 16, 4096], [count]: 40
+flag_gems.ops.mm.general_mm, [shape info]: [-, 64, 16, 4096], [count]: 40
+flag_gems.ops.mm.general_mm, [shape info]: [-, 232, 16, 4096], [count]: 29
+flag_gems.ops.mm.general_mm, [shape info]: [-, 168, 4096, 1024], [count]: 27
+flag_gems.ops.mm.general_mm, [shape info]: [-, 432, 16, 4096], [count]: 27
+flag_gems.ops.mm.general_mm, [shape info]: [-, 168, 2560, 4096], [count]: 26
+flag_gems.ops.mm.general_mm, [shape info]: [-, 160, 16, 4096], [count]: 23
+flag_gems.ops.mm.general_mm, [shape info]: [-, 272, 2560, 4096], [count]: 23
+flag_gems.ops.mm.general_mm, [shape info]: [-, 432, 2560, 4096], [count]: 23
+flag_gems.ops.mm.general_mm, [shape info]: [-, 136, 16, 4096], [count]: 19
+flag_gems.ops.mm.general_mm, [shape info]: [-, 256, 16, 4096], [count]: 19
+flag_gems.ops.mm.general_mm, [shape info]: [-, 256, 2560, 4096], [count]: 19
+flag_gems.ops.mm.general_mm, [shape info]: [-, 160, 2560, 4096], [count]: 18
+flag_gems.ops.mm.general_mm, [shape info]: [-, 232, 2560, 4096], [count]: 18
+flag_gems.ops.mm.general_mm, [shape info]: [-, 304, 4096, 1024], [count]: 17
+flag_gems.ops.mm.general_mm, [shape info]: [-, 120, 16, 4096], [count]: 16
+flag_gems.ops.mm.general_mm, [shape info]: [-, 200, 2560, 4096], [count]: 16
+flag_gems.ops.mm.general_mm, [shape info]: [-, 496, 2560, 4096], [count]: 16
+flag_gems.ops.mm.general_mm, [shape info]: [-, 512, 4096, 1024], [count]: 16
+flag_gems.ops.mm.general_mm, [shape info]: [-, 128, 2560, 4096], [count]: 15
+flag_gems.ops.mm.general_mm, [shape info]: [-, 176, 2560, 4096], [count]: 15
+flag_gems.ops.mm.general_mm, [shape info]: [-, 232, 4096, 1024], [count]: 15
+flag_gems.ops.mm.general_mm, [shape info]: [-, 288, 16, 4096], [count]: 15
+flag_gems.ops.mm.general_mm, [shape info]: [-, 304, 16, 4096], [count]: 15
+flag_gems.ops.mm.general_mm, [shape info]: [-, 368, 16, 4096], [count]: 15
+flag_gems.ops.mm.general_mm, [shape info]: [-, 400, 4096, 1024], [count]: 15
+flag_gems.ops.mm.general_mm, [shape info]: [-, 192, 2560, 4096], [count]: 14
+flag_gems.ops.mm.general_mm, [shape info]: [-, 272, 16, 4096], [count]: 14
+flag_gems.ops.mm.general_mm, [shape info]: [-, 304, 2560, 4096], [count]: 14
+flag_gems.ops.mm.general_mm, [shape info]: [-, 352, 16, 4096], [count]: 14
+flag_gems.ops.mm.general_mm, [shape info]: [-, 128, 16, 4096], [count]: 13
+flag_gems.ops.mm.general_mm, [shape info]: [-, 152, 16, 4096], [count]: 13
+flag_gems.ops.mm.general_mm, [shape info]: [-, 152, 2560, 4096], [count]: 13
+flag_gems.ops.mm.general_mm, [shape info]: [-, 216, 2560, 4096], [count]: 13
+flag_gems.ops.mm.general_mm, [shape info]: [-, 496, 16, 4096], [count]: 13
+flag_gems.ops.mm.general_mm, [shape info]: [-, 512, 2560, 4096], [count]: 13
+flag_gems.ops.mm.general_mm, [shape info]: [-, 200, 16, 4096], [count]: 12
+flag_gems.ops.mm.general_mm, [shape info]: [-, 216, 16, 4096], [count]: 12
+flag_gems.ops.mm.general_mm, [shape info]: [-, 320, 16, 4096], [count]: 12
+flag_gems.ops.mm.general_mm, [shape info]: [-, 320, 2560, 4096], [count]: 12
+flag_gems.ops.mm.general_mm, [shape info]: [-, 88, 2560, 4096], [count]: 12
+flag_gems.ops.mm.general_mm, [shape info]: [-, 96, 16, 4096], [count]: 12
+flag_gems.ops.mm.general_mm, [shape info]: [-, 112, 2560, 4096], [count]: 11
+flag_gems.ops.mm.general_mm, [shape info]: [-, 160, 4096, 1024], [count]: 11
+flag_gems.ops.mm.general_mm, [shape info]: [-, 224, 2560, 4096], [count]: 11
+flag_gems.ops.mm.general_mm, [shape info]: [-, 272, 4096, 1024], [count]: 11
+flag_gems.ops.mm.general_mm, [shape info]: [-, 384, 16, 4096], [count]: 11
+flag_gems.ops.mm.general_mm, [shape info]: [-, 88, 4096, 1024], [count]: 11
+flag_gems.ops.mm.general_mm, [shape info]: [-, 176, 4096, 1024], [count]: 10
+flag_gems.ops.mm.general_mm, [shape info]: [-, 216, 4096, 1024], [count]: 10
+flag_gems.ops.mm.general_mm, [shape info]: [-, 224, 16, 4096], [count]: 10
+flag_gems.ops.mm.general_mm, [shape info]: [-, 496, 4096, 1024], [count]: 10
+flag_gems.ops.mm.general_mm, [shape info]: [-, 144, 16, 4096], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16, 16, 4096], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 168, 16, 4096], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 240, 2560, 4096], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 248, 2560, 4096], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 432, 4096, 1024], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 480, 16, 4096], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 72, 2560, 4096], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 72, 4096, 1024], [count]: 9
+flag_gems.ops.mm.general_mm, [shape info]: [-, 112, 16, 4096], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 128, 4096, 1024], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 136, 2560, 4096], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 152, 4096, 1024], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 192, 16, 4096], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 256, 4096, 1024], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 288, 2560, 4096], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 368, 2560, 4096], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 464, 2560, 4096], [count]: 8
+flag_gems.ops.mm.general_mm, [shape info]: [-, 112, 4096, 1024], [count]: 7
+flag_gems.ops.mm.general_mm, [shape info]: [-, 200, 4096, 1024], [count]: 7
+flag_gems.ops.mm.general_mm, [shape info]: [-, 288, 4096, 1024], [count]: 7
+flag_gems.ops.mm.general_mm, [shape info]: [-, 352, 2560, 4096], [count]: 7
+flag_gems.ops.mm.general_mm, [shape info]: [-, 464, 16, 4096], [count]: 7
+flag_gems.ops.mm.general_mm, [shape info]: [-, 80, 16, 4096], [count]: 7
+flag_gems.ops.mm.general_mm, [shape info]: [-, 80, 2560, 4096], [count]: 7
+flag_gems.ops.mm.general_mm, [shape info]: [-, 80, 4096, 1024], [count]: 7
+flag_gems.ops.mm.general_mm, [shape info]: [-, 120, 2560, 4096], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 144, 2560, 4096], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 192, 4096, 1024], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 224, 4096, 1024], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 24, 2560, 4096], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 240, 16, 4096], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 240, 4096, 1024], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 384, 2560, 4096], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 448, 16, 4096], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 448, 2560, 4096], [count]: 6
+flag_gems.ops.mm.general_mm, [shape info]: [-, 136, 4096, 1024], [count]: 5
+flag_gems.ops.mm.general_mm, [shape info]: [-, 248, 4096, 1024], [count]: 5
+flag_gems.ops.mm.general_mm, [shape info]: [-, 32, 16, 4096], [count]: 5
+flag_gems.ops.mm.general_mm, [shape info]: [-, 336, 16, 4096], [count]: 5
+flag_gems.ops.mm.general_mm, [shape info]: [-, 336, 2560, 4096], [count]: 5
+flag_gems.ops.mm.general_mm, [shape info]: [-, 448, 4096, 1024], [count]: 5
+flag_gems.ops.mm.general_mm, [shape info]: [-, 8, 4096, 1024], [count]: 5
+flag_gems.ops.mm.general_mm, [shape info]: [-, 104, 16, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 176, 16, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2048, 16, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 24, 4096, 1024], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 320, 4096, 1024], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 416, 16, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 416, 2560, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 464, 4096, 1024], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 512, 16, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 56, 16, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 56, 2560, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 8, 2560, 4096], [count]: 4
+flag_gems.ops.mm.general_mm, [shape info]: [-, 104, 4096, 1024], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 120, 4096, 1024], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 144, 4096, 1024], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 184, 16, 4096], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 184, 2560, 4096], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 184, 4096, 1024], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 248, 16, 4096], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 32, 2560, 4096], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 336, 4096, 1024], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 416, 4096, 1024], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 480, 2560, 4096], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 56, 4096, 1024], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 72, 16, 4096], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 8, 16, 4096], [count]: 3
+flag_gems.ops.mm.general_mm, [shape info]: [-, 1, 16, 4096], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 104, 2560, 4096], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16, 2560, 4096], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 16, 4096, 1024], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2, 16, 4096], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2048, 2560, 4096], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 2048, 4096, 1024], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 352, 4096, 1024], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 400, 2560, 4096], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 480, 4096, 1024], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 64, 2560, 4096], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 96, 2560, 4096], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 96, 4096, 1024], [count]: 2
+flag_gems.ops.mm.general_mm, [shape info]: [-, 208, 2560, 4096], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 24, 16, 4096], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 32, 4096, 1024], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 384, 4096, 1024], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 4, 2560, 4096], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 40, 2560, 4096], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 48, 16, 4096], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 48, 2560, 4096], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 64, 4096, 1024], [count]: 1
+flag_gems.ops.mm.general_mm, [shape info]: [-, 88, 16, 4096], [count]: 1
+flag_gems.ops.sigmoid.sigmoid, [shape info]: [-, 16, 2560, 4096], [count]: 1
+flag_gems.ops.sum.sum_dim_out, [shape info]: [-, 16384, 2560, 4096], [count]: 1
+flag_gems.ops.zeros_like.zeros_like, [shape info]: [-, 16384, 2560, 4096](batch, M, N, K), [count]: 2
+
