@@ -35,3 +35,26 @@ tests/*.json
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
+
+# --- appended rules (after line 38) ---
+# Ignore specific top-level outputs
+log/
+=0.11
+
+# Ignore everything under flagtune by default
+flagtune/**
+
+# Keep directory traversal
+!flagtune/
+!flagtune/**/
+
+# Allow scripts under flagtune
+!flagtune/**/*.py
+!flagtune/**/*.sh
+
+# Allow tune-config directory and its contents
+!flagtune/tune-config/
+!flagtune/tune-config/**
+
+# Allow README
+!flagtune/README.md

@@ -212,10 +212,9 @@ def matmul_get_configs(pre_hook=matmul_tma_set_block_size_hook):
             num_warps=w,
             pre_hook=pre_hook,
         )
-        # add config
-        for BM in [16, 32, 64, 128, 256]
-        for BN in [16, 32, 64, 128]
-        for BK in [32, 64, 128, 256]
+	    for BM in [32, 64, 128, 256]
+        for BN in [32, 64, 128]
+        for BK in [32, 64, 128]
         for s in [2, 3, 4]
         for w in [4, 8]
     ]
