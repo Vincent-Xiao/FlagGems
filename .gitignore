@@ -36,11 +36,23 @@ tests/*.json
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
 
-# flagtune: ignore everything except selected files/dirs
+# --- appended rules (after line 38) ---
+# Ignore specific top-level outputs
+log/
+=0.11
+
+# Ignore everything under flagtune by default
 flagtune/**
-!flagtune/processing/
-!flagtune/processing/**
-!flagtune/shape-config/
-flagtune/shape-config/**
-!flagtune/shape-config/qwen3.5.txt
-!flagtune/pretune.sh
+
+# Keep directory traversal
+!flagtune/
+!flagtune/**/
+
+# Allow scripts under flagtune
+!flagtune/**/*.py
+!flagtune/**/*.sh
+
+# Allow tune-config directory and its contents
+!flagtune/tune-config/
+!flagtune/tune-config/**
+
