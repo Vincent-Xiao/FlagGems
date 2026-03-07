@@ -56,3 +56,5 @@ flagtune/**
 !flagtune/tune-config/
 !flagtune/tune-config/**
 
+# Allow README
+!flagtune/README.md
