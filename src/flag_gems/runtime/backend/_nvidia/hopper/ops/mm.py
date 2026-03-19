@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 import torch
@@ -203,6 +204,21 @@ def matmul_tma_set_block_size_hook(nargs):
 
 
 def matmul_get_configs(pre_hook=matmul_tma_set_block_size_hook):
+    if os.environ.get("USE_FLAGTUNE"):
+        print("Using expand configurations for GEMM kernel autotuning")
+        return [
+            triton.Config(
+                {"BLOCK_M": BM, "BLOCK_N": BN, "BLOCK_K": BK},
+                num_stages=s,
+                num_warps=w,
+                pre_hook=pre_hook,
+            )
+            for BM in [16, 32, 64, 128, 256]
+            for BN in [16, 32, 64, 128]
+            for BK in [32, 64, 128, 256]
+            for s in [2, 3, 4]
+            for w in [4, 8]
+        ]
     return [
         triton.Config(
             {"BLOCK_M": BM, "BLOCK_N": BN, "BLOCK_K": BK},
@@ -217,12 +233,37 @@ def matmul_get_configs(pre_hook=matmul_tma_set_block_size_hook):
         for w in [4, 8]
     ]
 
+def gemv_get_configs():
+    if os.environ.get("USE_FLAGTUNE"):
+        print("Using expand configurations for GEMV kernel autotuning")
+        return [
+            triton.Config(
+                {"BLOCK_M": BM, "BLOCK_K": BK},
+                num_stages=s,
+                num_warps=w,
+            )
+            for BM in [8, 16, 32, 64, 128, 256]
+            for BK in [8, 16, 32, 64, 128, 256]
+            for s in [2, 3, 4, 5, 6, 7, 8]
+            for w in [1, 2, 4, 8]
+        ]
+    return [
+        triton.Config(
+            {"BLOCK_M": BM, "BLOCK_K": BK},
+            num_stages=s,
+            num_warps=w,
+        )
+        for BM in [32]
+        for BK in [256]
+        for s in [2, 3, 4]
+        for w in [4, 8]
+    ]
 
 @libentry()
 @libtuner(
     configs=matmul_get_configs(),
     key=["M", "N", "K", "stride_am", "stride_bk", "dtype"],
-    strategy=["align32", "align32", "align32", "align32", "align32", "default"],
+    strategy=["default", "default", "default", "default", "default", "default"] if os.environ.get("USE_FLAGTUNE") else ["align32", "align32", "align32", "align32", "align32", "default"],
     warmup=5,
     rep=5,
 )
@@ -383,8 +424,14 @@ def general_mm(a, b, c, M, N, K):
             )
     return c
 
-
 @libentry()
+@libtuner(
+    configs=gemv_get_configs(),
+    key=["M", "K", "stride_am", "stride_bk"],
+    strategy=["default", "default", "default", "default"],
+    warmup=5,
+    rep=10,
+)
 @triton.jit
 def gemv_kernel(
     A,
@@ -439,9 +486,7 @@ def gemv_mm(a, b, c, M, K):
         K,
     )
 
-    BLOCK_M = 32
-    BLOCK_K = 256
-    grid = lambda META: (triton.cdiv(M, BLOCK_M),)
+    grid = lambda META: (triton.cdiv(M, META["BLOCK_M"]),)
 
     with torch_device_fn.device(a.device):
         gemv_kernel[grid](
@@ -453,8 +498,6 @@ def gemv_mm(a, b, c, M, K):
             a.stride(0),
             a.stride(1),
             b.stride(0),
-            BLOCK_M=BLOCK_M,
-            BLOCK_K=BLOCK_K,
         )
     return c
 
