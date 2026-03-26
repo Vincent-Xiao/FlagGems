@@ -200,6 +200,9 @@ class W8A8BlockFP8MatmulBenchmark(Benchmark):
         )
         self.shape_desc = "M, N, K"
 
+    def set_more_shapes(self):
+        return BlasBenchmark.set_more_shapes(self)
+
     def set_shapes(self, shape_file_path=None):
         super().set_shapes(shape_file_path)
         normalized_shapes = []
