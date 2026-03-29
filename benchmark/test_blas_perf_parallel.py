@@ -10,8 +10,8 @@ import pytest
 import torch
 import yaml
 
-import flag_gems
 import benchmark.test_blas_perf as blas_perf
+import flag_gems
 from benchmark.attri_util import BenchmarkMetrics, BenchmarkResult, OperationAttribute
 from benchmark.conftest import Config, emit_record_logger
 
@@ -286,7 +286,9 @@ class ParallelBenchmarkMixin:
         available_gpus = _parallel_device_count()
         if available_gpus < required_gpus:
             pytest.skip(
-                f"--parallel requires at least {required_gpus} {_parallel_device_label()} devices, found {available_gpus}."
+                "--parallel requires at least "
+                f"{required_gpus} {_parallel_device_label()} devices, "
+                f"found {available_gpus}."
             )
 
         node_info = os.environ.get("PYTEST_CURRENT_TEST")
@@ -335,7 +337,9 @@ class ParallelBenchmarkMixin:
                     group_size = self.get_parallel_metric_group_size(shape)
                     next_cursor = cursor + group_size
                     if next_cursor > len(chunk_metrics):
-                        pytest.fail("parallel benchmark worker returned incomplete metrics")
+                        pytest.fail(
+                            "parallel benchmark worker returned incomplete metrics"
+                        )
                     for metric_order, metric in enumerate(
                         chunk_metrics[cursor:next_cursor]
                     ):
