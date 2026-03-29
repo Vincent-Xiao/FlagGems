@@ -45,6 +45,8 @@ def _parallel_device_label():
 
 
 class ParallelBenchmarkMixin:
+    SHAPE_CONFIG_KEYS = ()
+
     def set_more_shapes(self):
         if os.environ.get(PARALLEL_WORKER_ENV):
             return []
@@ -52,6 +54,9 @@ class ParallelBenchmarkMixin:
 
     def get_parallel_metric_group_size(self, shape):
         return 1
+
+    def should_forward_parallel_dtype(self, dtype_name):
+        return True
 
     def _build_metric_from_input(self, input_item):
         metric = BenchmarkMetrics()
@@ -102,7 +107,7 @@ class ParallelBenchmarkMixin:
         return metrics
 
     def _get_shape_config_keys(self):
-        keys = [self.op_name]
+        keys = list(self.SHAPE_CONFIG_KEYS) + [self.op_name]
         keys.extend(cls.__name__ for cls in type(self).__mro__)
         return list(dict.fromkeys(key for key in keys if key))
 
@@ -235,9 +240,9 @@ class ParallelBenchmarkMixin:
             str(Config.repetition),
             "--shape_file",
             tmp_shape_path,
-            "--dtypes",
-            dtype_name,
         ]
+        if self.should_forward_parallel_dtype(dtype_name):
+            cmd.extend(["--dtypes", dtype_name])
         if Config.user_desired_metrics:
             for metric in Config.user_desired_metrics:
                 cmd.extend(["--metrics", metric])
@@ -411,7 +416,59 @@ class ParallelAddrBenchmark(ParallelBenchmarkMixin, blas_perf.AddrBenchmark):
 class ParallelW8A8BlockFP8MatmulBenchmark(
     ParallelBenchmarkMixin, blas_perf.W8A8BlockFP8MatmulBenchmark
 ):
-    pass
+    SHAPE_CONFIG_KEYS = ("mm", "BlasBenchmark")
+
+    def set_more_shapes(self):
+        if os.environ.get(PARALLEL_WORKER_ENV):
+            return []
+        return blas_perf.BlasBenchmark.set_more_shapes(self)
+
+    def should_forward_parallel_dtype(self, dtype_name):
+        if Config.user_desired_dtypes is None and dtype_name == "fp8":
+            return False
+        return True
+
+    def set_shapes(self, shape_file_path=None):
+        if not os.path.isfile(shape_file_path):
+            raise FileNotFoundError(f"Shape file '{shape_file_path}' does not exist.")
+
+        with open(shape_file_path, "r") as shape_file:
+            yaml_config = yaml.safe_load(shape_file) or {}
+
+        for shape_key in self._get_shape_config_keys():
+            if shape_key in yaml_config:
+                self.shapes = yaml_config[shape_key].get(
+                    "shapes", blas_perf.Benchmark.DEFAULT_SHAPES
+                )
+                break
+        else:
+            self.shapes = blas_perf.Benchmark.DEFAULT_SHAPES
+
+        self.shapes = [tuple(shape) for shape in self.shapes]
+        if (
+            Config.bench_level == blas_perf.BenchLevel.COMPREHENSIVE
+            and not Config.query
+            and not os.environ.get(PARALLEL_WORKER_ENV)
+        ):
+            additional_shapes = self.set_more_shapes()
+            if additional_shapes:
+                self.shapes = list(dict.fromkeys(self.shapes + additional_shapes))
+
+        normalized_shapes = []
+        for shape in self.shapes:
+            if len(shape) == 4:
+                _, m, n, k = shape
+                normalized_shapes.append((m, n, k))
+            elif len(shape) == 3:
+                normalized_shapes.append(shape)
+            else:
+                raise ValueError(
+                    "w8a8_block_fp8_matmul benchmark expects shapes in (M, N, K) "
+                    "or (B, M, N, K) format."
+                )
+
+        self.shapes = normalized_shapes
+        self.shape_desc = "M, N, K"
 
 
 @pytest.mark.parametrize(
