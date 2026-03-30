@@ -11,7 +11,7 @@ from flag_gems.runtime import torch_device_fn
 from flag_gems.utils import libentry, libtuner
 from flag_gems.utils import triton_lang_extension as tle
 
-from .utils import create_tma_device_descriptor
+from .utils import create_tma_device_descriptor, get_cached_tma_device_descriptor
 
 logger = logging.getLogger(
     f'flag_gems.runtime.backend._mthreads.ops.{__name__.split(".")[-1]}'
@@ -425,8 +425,12 @@ def sqmma_descriptor_pre_hook(nargs):
     block_k = nargs["BLOCK_K"]
     device = c.device
 
-    nargs["a_desc_ptr"].copy_(create_tma_device_descriptor(a, block_m, block_k, device))
-    nargs["b_desc_ptr"].copy_(create_tma_device_descriptor(b, block_k, block_n, device))
+    nargs["a_desc_ptr"].copy_(
+        get_cached_tma_device_descriptor(a, block_m, block_k, device)
+    )
+    nargs["b_desc_ptr"].copy_(
+        get_cached_tma_device_descriptor(b, block_k, block_n, device)
+    )
     nargs["c_desc_ptr"].copy_(create_tma_device_descriptor(c, block_m, block_n, device))
 
 
