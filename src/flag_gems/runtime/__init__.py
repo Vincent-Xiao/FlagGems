@@ -52,4 +52,5 @@ def get_expand_config(op_name):
 def ops_get_configs(op_name, pre_hook=None):
     return config_loader.ops_get_configs(op_name=op_name, pre_hook=pre_hook)
 
+
 __all__ = ["*"]

@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Optional
+
 import torch
 import triton
 import triton.language as tl
@@ -316,7 +317,9 @@ def mm_kernel_general(
 
 @libentry()
 @libtuner(
-    configs=runtime.ops_get_configs("mm_general_tma", pre_hook=matmul_tma_set_block_size_hook)
+    configs=runtime.ops_get_configs(
+        "mm_general_tma", pre_hook=matmul_tma_set_block_size_hook
+    )
     if os.environ.get("USE_FLAGTUNE") == "1"
     else [
         triton.Config(
@@ -521,11 +524,11 @@ def gemv_get_configs():
 
 @libentry()
 @libtuner(
-    configs=runtime.ops_get_configs("mm_gemv",pre_hook=None)
+    configs=runtime.ops_get_configs("mm_gemv", pre_hook=None)
     if os.environ.get("USE_FLAGTUNE") == "1"
     else [triton.Config({"BLOCK_M": 32, "BLOCK_K": 256})],
     key=["M", "K", "stride_am", "stride_bk"],
-    strategy=runtime.get_expand_config("mm_gemv") ["strategy"]
+    strategy=runtime.get_expand_config("mm_gemv")["strategy"]
     if os.environ.get("USE_FLAGTUNE") == "1"
     else ["align32", "align32", "align32", "default"],
     warmup=5,
