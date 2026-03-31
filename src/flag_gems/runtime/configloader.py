@@ -7,7 +7,6 @@ import triton
 from . import backend
 from .backend.device import DeviceDetector
 
-
 DEFAULT_EXPAND_CONFIG_PATH = os.path.normpath(
     os.path.join(
         os.path.dirname(__file__),
@@ -60,6 +59,7 @@ OP_KEY_ORDERS = {
     "mm_general_tma": ["M", "N", "K", "stride_am", "stride_bk", "dtype"],
     "mm_gemv": ["M", "K", "stride_am", "stride_bk"],
 }
+
 
 class ConfigLoader(object):
     _instance = None
@@ -401,17 +401,14 @@ class ConfigLoader(object):
             gen_config = None
             strategy_config = None
             for single_config in expand_configs:
-
                 if isinstance(single_config, dict) and "param_map" in single_config:
                     gen_config = single_config
 
                 if isinstance(single_config, dict) and "strategy" in single_config:
                     strategy_config = single_config.get("strategy")
 
-  
             param_map = gen_config.get("param_map")
             meta_map = param_map.get("META")
-   
 
             strategy = default_strategy
             if isinstance(strategy_config, dict):

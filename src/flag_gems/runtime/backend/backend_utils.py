@@ -37,6 +37,7 @@ def get_tune_config(vendor_name=None, file_mode="r", file_path=None):
 
     return config
 
+
 def get_expand_config(op_name=None, file_mode="r", file_path=None):
     if not file_path:
         raise ValueError("expand config file path is required")
