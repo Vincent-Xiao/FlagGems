@@ -35,6 +35,10 @@ def is_sqmma_compatible(a, b, N, K):
     )
 
 
+def _is_sqmma_block_compatible(M, N, K, block_m, block_n, block_k):
+    return M % block_m == 0 and N % block_n == 0 and K % block_k == 0
+
+
 def get_expand_config(op):
     default_strategies = {
         "matmul": ["default", "default", "default", "default", "default"],
@@ -431,6 +435,25 @@ def sqmma_descriptor_pre_hook(nargs):
     nargs["c_desc_ptr"].copy_(create_tma_device_descriptor(c, block_m, block_n, device))
 
 
+def prune_sqmma_configs(configs, named_args, **kwargs):
+    M = named_args["M"]
+    N = named_args["N"]
+    K = named_args["K"]
+
+    return [
+        config
+        for config in configs
+        if _is_sqmma_block_compatible(
+            M,
+            N,
+            K,
+            config.kwargs["BLOCK_M"],
+            config.kwargs["BLOCK_N"],
+            config.kwargs["BLOCK_K"],
+        )
+    ]
+
+
 def sqmma_get_configs(pre_hook=sqmma_descriptor_pre_hook):
     if os.environ.get("USE_FLAGTUNE") == "1":
         expand_config = get_expand_config("sqmma")
@@ -460,7 +483,6 @@ def sqmma_get_configs(pre_hook=sqmma_descriptor_pre_hook):
             pre_hook=pre_hook,
         )
     ]
-
 @libentry()
 @libtuner(
     configs=sqmma_get_configs(),
@@ -468,6 +490,7 @@ def sqmma_get_configs(pre_hook=sqmma_descriptor_pre_hook):
     strategy=get_expand_config("sqmma")["strategy"]
     if os.environ.get("USE_FLAGTUNE") == "1"
     else ["align32", "align32", "align32", "align32", "align32", "default"],
+    prune_configs_by={"early_config_prune": prune_sqmma_configs},
 )
 @triton.jit
 def mm_sqmma_kernel(
