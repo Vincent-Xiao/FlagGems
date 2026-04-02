@@ -11,6 +11,7 @@ from flag_gems.utils import libentry, libtuner
 from flag_gems.utils import triton_lang_extension as tle
 
 from .utils import create_tma_device_descriptor, get_cached_tma_device_descriptor
+
 logger = logging.getLogger("flag_gems.runtime.backend._mthreads.ops.mm")
 
 

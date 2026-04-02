@@ -734,7 +734,9 @@ class LibEntry(triton.KernelInterface):
                         constexprs = {**constexprs, **config.kwargs}
                         tune_constexprs = {**tune_constexprs, **config.kwargs}
                         if config.pre_hook is not None:
-                            launch_pre_hooks.append((config.pre_hook, config.all_kwargs()))
+                            launch_pre_hooks.append(
+                                (config.pre_hook, config.all_kwargs())
+                            )
                     elif isinstance(fn, triton.runtime.Heuristics):
                         for v, heur in fn.values.items():
                             heur_constexprs[v] = heur(
