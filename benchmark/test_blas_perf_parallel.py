@@ -498,7 +498,7 @@ class ParallelAddrBenchmark(ParallelBenchmarkMixin, blas_perf.AddrBenchmark):
 class ParallelW8A8BlockFP8MatmulBenchmark(
     ParallelBenchmarkMixin, blas_perf.W8A8BlockFP8MatmulBenchmark
 ):
-    SHAPE_CONFIG_KEYS = ("mm", "BlasBenchmark")
+    SHAPE_CONFIG_KEYS = ("w8a8_block_fp8_matmul", "BlasBenchmark")
 
     def set_more_shapes(self):
         if os.environ.get(PARALLEL_WORKER_ENV):
