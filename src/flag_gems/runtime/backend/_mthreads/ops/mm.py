@@ -4,7 +4,6 @@ import os
 import torch
 import triton
 import triton.language as tl
-import yaml
 
 from flag_gems import runtime
 from flag_gems.runtime import torch_device_fn
@@ -35,105 +34,7 @@ def is_sqmma_compatible(a, b, N, K):
     )
 
 
-def get_expand_config(op):
-    default_strategies = {
-        "matmul": ["default", "default", "default", "default", "default"],
-        "sqmma": ["default", "default", "default", "default", "default", "default"],
-        "gemv": ["align32", "align32", "align32", "default"],
-    }
-    op_key_orders = {
-        "matmul": ["M", "N", "K", "stride_am", "stride_bk"],
-        "sqmma": ["M", "N", "K", "stride_am", "stride_bk", "dtype"],
-        "gemv": ["M", "K", "stride_am", "stride_bk"],
-    }
-    op_meta_map = {
-        "matmul": {
-            "BM": "BLOCK_M",
-            "BN": "BLOCK_N",
-            "BK": "BLOCK_K",
-        },
-        "sqmma": {
-            "BM": "BLOCK_M",
-            "BN": "BLOCK_N",
-            "BK": "BLOCK_K",
-        },
-        "gemv": {
-            "BM": "BLOCK_M",
-            "BK": "BLOCK_K",
-        },
-    }
-
-    if op not in default_strategies:
-        return -1
-
-    default_strategy = default_strategies[op]
-    config_path = os.path.join(
-        os.path.dirname(__file__), "..", "mm_mthreads_expand.yaml"
-    )
-    if not os.path.exists(config_path):
-        return -1
-
-    try:
-        with open(config_path, "r") as file:
-            config = yaml.safe_load(file) or {}
-
-        expand_configs = config.get(op) or []
-
-        gen_config = None
-        strategy_config = None
-        for single_config in expand_configs:
-            if isinstance(single_config, dict) and "param_map" in single_config:
-                gen_config = single_config
-            if isinstance(single_config, dict) and "strategy" in single_config:
-                strategy_config = single_config.get("strategy")
-
-        if gen_config is None:
-            return -1
-
-        param_map = gen_config["param_map"]
-        meta_map = param_map["META"]
-
-        strategy = default_strategy
-        if isinstance(strategy_config, dict):
-            strategy = [
-                strategy_config.get(k, default_strategy[idx])
-                for idx, k in enumerate(op_key_orders[op])
-            ]
-
-        ranges = {}
-        for range_key, meta_key in op_meta_map[op].items():
-            ranges[range_key] = gen_config[meta_map[meta_key]]
-        ranges["s"] = gen_config[param_map["num_stages"]]
-        ranges["w"] = gen_config[param_map["num_warps"]]
-
-        return {
-            "ranges": ranges,
-            "strategy": strategy,
-        }
-    except Exception:
-        return -1
-
-
 def matmul_get_configs():
-    if os.environ.get("USE_FLAGTUNE") == "1":
-        expand_config = get_expand_config("matmul")
-        if expand_config != -1:
-            logger.debug(
-                "Using expand configurations from mm_mthreads__expand.yaml for matmul kernel autotuning"
-            )
-            ranges = expand_config["ranges"]
-            return [
-                triton.Config(
-                    {"BLOCK_M": BM, "BLOCK_N": BN, "BLOCK_K": BK},
-                    num_stages=s,
-                    num_warps=w,
-                )
-                for BM in ranges["BM"]
-                for BN in ranges["BN"]
-                for BK in ranges["BK"]
-                for s in ranges["s"]
-                for w in ranges["w"]
-            ]
     return runtime.get_tuned_config("mm")
 
 
@@ -147,9 +48,7 @@ def prev_multiple_of(a, b):
 @libtuner(
     configs=matmul_get_configs(),
     key=["M", "N", "K", "stride_am", "stride_bk"],
-    strategy=get_expand_config("matmul")["strategy"]
-    if os.environ.get("USE_FLAGTUNE") == "1"
-    else ["align32", "align32", "align32", "align32", "align32"],
+    strategy=["align32", "align32", "align32", "align32", "align32"],
 )
 @triton.jit
 def mm_kernel(
@@ -225,24 +124,6 @@ def mm_kernel(
 
 
 def gemv_get_configs():
-    if os.environ.get("USE_FLAGTUNE") == "1":
-        expand_config = get_expand_config("gemv")
-        if expand_config != -1:
-            logger.debug(
-                "Using expand configurations from mm_mthreads__expand.yaml for gemv kernel autotuning"
-            )
-            ranges = expand_config["ranges"]
-            return [
-                triton.Config(
-                    {"BLOCK_M": BM, "BLOCK_K": BK},
-                    num_stages=s,
-                    num_warps=w,
-                )
-                for BM in ranges["BM"]
-                for BK in ranges["BK"]
-                for s in ranges["s"]
-                for w in ranges["w"]
-            ]
     return [triton.Config({"BLOCK_M": 64, "BLOCK_K": 64})]
 
 
@@ -250,9 +131,7 @@ def gemv_get_configs():
 @libtuner(
     configs=gemv_get_configs(),
     key=["M", "K", "stride_am", "stride_bk"],
-    strategy=get_expand_config("gemv")["strategy"]
-    if os.environ.get("USE_FLAGTUNE") == "1"
-    else ["align32", "align32", "align32", "default"],
+    strategy=["align32", "align32", "align32", "default"],
 )
 @triton.jit
 def gemv_kernel(
@@ -430,27 +309,8 @@ def sqmma_descriptor_pre_hook(nargs):
     )
     nargs["c_desc_ptr"].copy_(create_tma_device_descriptor(c, block_m, block_n, device))
 
+
 def sqmma_get_configs(pre_hook=sqmma_descriptor_pre_hook):
-    if os.environ.get("USE_FLAGTUNE") == "1":
-        expand_config = get_expand_config("sqmma")
-        if expand_config != -1:
-            logger.debug(
-                "Using expand configurations from mm_mthreads__expand.yaml for SQMMA autotuning"
-            )
-            ranges = expand_config["ranges"]
-            return [
-                triton.Config(
-                    {"BLOCK_M": BM, "BLOCK_N": BN, "BLOCK_K": BK},
-                    num_stages=s,
-                    num_warps=w,
-                    pre_hook=pre_hook,
-                )
-                for BM in ranges["BM"]
-                for BN in ranges["BN"]
-                for BK in ranges["BK"]
-                for s in ranges["s"]
-                for w in ranges["w"]
-            ]
     return [
         triton.Config(
             {"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 64},
@@ -459,13 +319,13 @@ def sqmma_get_configs(pre_hook=sqmma_descriptor_pre_hook):
             pre_hook=pre_hook,
         )
     ]
+
+
 @libentry()
 @libtuner(
     configs=sqmma_get_configs(),
     key=["M", "N", "K", "stride_am", "stride_bk", "dtype"],
-    strategy=get_expand_config("sqmma")["strategy"]
-    if os.environ.get("USE_FLAGTUNE") == "1"
-    else ["align32", "align32", "align32", "align32", "align32", "default"],
+    strategy=["align32", "align32", "align32", "align32", "align32", "default"],
 )
 @triton.jit
 def mm_sqmma_kernel(
