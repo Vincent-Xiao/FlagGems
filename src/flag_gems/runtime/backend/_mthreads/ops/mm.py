@@ -290,9 +290,9 @@ def gemv_kernel(
         b_ptrs = B + k_offset * stride_bk
         b = tl.load(b_ptrs, mask=k_mask, other=0.0)
 
-        if a.dtype != b.dtype:
-            a = a.to(C.dtype.element_ty)
-            b = b.to(C.dtype.element_ty)
+        # Keep the reduction in fp32 so N=1 GEMV matches the mm path more closely.
+        a = a.to(tl.float32)
+        b = b.to(tl.float32)
         acc += tl.sum(a * b[None, :], axis=1)
 
     c_ptrs = C + row_offset * stride_cm
