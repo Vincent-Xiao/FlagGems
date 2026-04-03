@@ -408,7 +408,7 @@ def general_mm(a, b, c, M, N, K):
 @libentry()
 @libtuner(
     configs=runtime.ops_get_configs(
-        "mm_gemv", pre_hook=None, yaml_path=EXPAND_CONFIG_FILENAME
+        "gemv", pre_hook=None, yaml_path=EXPAND_CONFIG_FILENAME
     )
     if os.environ.get("USE_FLAGTUNE") == "1"
     else [
@@ -417,7 +417,7 @@ def general_mm(a, b, c, M, N, K):
         )
     ],
     key=["M", "K", "stride_am", "stride_bk"],
-    strategy=runtime.get_expand_config("mm_gemv", yaml_path=EXPAND_CONFIG_FILENAME)[
+    strategy=runtime.get_expand_config("gemv", yaml_path=EXPAND_CONFIG_FILENAME)[
         "strategy"
     ]
     if os.environ.get("USE_FLAGTUNE") == "1"

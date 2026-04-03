@@ -38,7 +38,7 @@ DEFAULT_STRATEGIES = {
         "align32",
         "default",
     ],
-    "mm_gemv": ["align32", "align32", "align32", "default"],
+    "gemv": ["align32", "align32", "align32", "default"],
 }
 
 OP_KEY_ORDERS = {
@@ -48,7 +48,7 @@ OP_KEY_ORDERS = {
     "mv": ["M", "N"],
     "mm_general": ["M", "N", "K", "stride_am", "stride_bk"],
     "mm_general_tma": ["M", "N", "K", "stride_am", "stride_bk", "dtype"],
-    "mm_gemv": ["M", "K", "stride_am", "stride_bk"],
+    "gemv": ["M", "K", "stride_am", "stride_bk"],
 }
 
 
@@ -203,7 +203,7 @@ class ConfigLoader(object):
                 for w in ranges["w"]
             ]
 
-        if op_name == "mm_gemv":
+        if op_name == "gemv":
             return [
                 triton.Config(
                     {"BLOCK_M": block_m, "BLOCK_K": block_k},
@@ -248,7 +248,7 @@ class ConfigLoader(object):
             ),
             "mm_general": self._build_single_expand_spec("mm_general"),
             "mm_general_tma": self._build_single_expand_spec("mm_general_tma"),
-            "mm_gemv": self._build_single_expand_spec("mm_gemv"),
+            "gemv": self._build_single_expand_spec("gemv"),
         }
 
     def load_all(self):

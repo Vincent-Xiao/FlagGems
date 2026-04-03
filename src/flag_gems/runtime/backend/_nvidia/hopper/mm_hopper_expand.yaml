@@ -75,7 +75,7 @@ mm_general_tma:
      stride_am: default
      stride_bk: default
      dtype: default
-mm_gemv:
+gemv:
   - config:
     param_map:
       META:
