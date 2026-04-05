@@ -8,26 +8,37 @@ mm_general:
       num_stages: stages
       num_warps: warps
     block_m:
+      - 8
       - 16
       - 32
       - 64
       - 128
       - 256
     block_n:
+      - 8
       - 16
       - 32
       - 64
       - 128
+      - 256
     block_k:
+      - 8
+      - 16
       - 32
       - 64
       - 128
       - 256
     stages:
+      - 1
       - 2
       - 3
       - 4
+      - 5
+      - 6
+      - 7
+      - 8
     warps:
+      - 2
       - 4
       - 8
   - strategy:
@@ -46,26 +57,37 @@ mm_general_tma:
       num_stages: stages
       num_warps: warps
     block_m:
+      - 8
       - 16
       - 32
       - 64
       - 128
       - 256
     block_n:
+      - 8
       - 16
       - 32
       - 64
       - 128
+      - 256
     block_k:
+      - 8
+      - 16
       - 32
       - 64
       - 128
       - 256
     stages:
+      - 1
       - 2
       - 3
       - 4
+      - 5
+      - 6
+      - 7
+      - 8
     warps:
+      - 2
       - 4
       - 8
   - strategy:
@@ -89,14 +111,25 @@ mm_gemv:
       - 32
       - 64
       - 128
+      - 256
     block_k:
+      - 8
+      - 16
+      - 32
+      - 64
       - 128
       - 256
     stages:
+      - 1
+      - 2
       - 3
       - 4
       - 5
+      - 6
+      - 7
+      - 8
     warps:
+      - 2
       - 4
       - 8
   - strategy:
