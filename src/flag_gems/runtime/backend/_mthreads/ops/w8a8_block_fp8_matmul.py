@@ -52,6 +52,7 @@ def matmul_get_configs():
             {
                 "BLOCK_M": 64,
                 "BLOCK_N": 64,
+                "BLOCK_K": 128,
                 "GROUP_M": 4,
             },
             num_stages=3,
@@ -114,15 +115,31 @@ def w8a8_block_fp8_matmul_kernel(
 
     acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
     for k_start in range(0, tl.cdiv(K, BLOCK_K)):
+        global_k = k_start * BLOCK_K + offs_k
         a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k_start * BLOCK_K, other=0.0)
         b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k_start * BLOCK_K, other=0.0)
-
-        scale_k = (k_start * BLOCK_K) // group_k
-        a_s = tl.load(as_ptrs + scale_k * stride_As_k)
-        b_s = tl.load(bs_ptrs + scale_k * stride_Bs_k)
-        acc += tl.dot(a, b, out_dtype=tl.float32, allow_tf32=False) * a_s[
-            :, None
-        ] * b_s[None, :]
+        if BLOCK_K == group_k:
+            scale_k_scalar = k_start
+            a_s_scalar = tl.load(as_ptrs + scale_k_scalar * stride_As_k)
+            b_s_scalar = tl.load(bs_ptrs + scale_k_scalar * stride_Bs_k)
+            acc += tl.dot(a, b, out_dtype=tl.float32, allow_tf32=False) * a_s_scalar[
+                :, None
+            ] * b_s_scalar[None, :]
+        else:
+            scale_k_vec = global_k // group_k
+            num_scale_k = tl.cdiv(K, group_k)
+            scale_k_vec = tl.where(
+                scale_k_vec < num_scale_k,
+                scale_k_vec,
+                num_scale_k - 1,
+            )
+            a_s_tile = tl.load(as_ptrs[:, None] + scale_k_vec[None, :] * stride_As_k)
+            b_s_tile = tl.load(bs_ptrs[None, :] + scale_k_vec[:, None] * stride_Bs_k)
+            acc += tl.sum(
+                (a.to(tl.float32) * a_s_tile)[:, :, None]
+                * (b.to(tl.float32) * b_s_tile)[None, :, :],
+                axis=1,
+            )
 
         a_ptrs += BLOCK_K * stride_ak
         b_ptrs += BLOCK_K * stride_bk
@@ -142,7 +159,7 @@ def w8a8_block_fp8_matmul_kernel(
 
 
 def gemv_get_configs():
-    return [triton.Config({"BLOCK_M": 64}, num_stages=3, num_warps=4)]
+    return [triton.Config({"BLOCK_M": 64, "BLOCK_K": 128}, num_stages=3, num_warps=4)]
 
 
 @libentry()
@@ -164,6 +181,7 @@ def w8a8_block_fp8_matmul_gemv_kernel(
     stride_am,
     stride_ak,
     stride_bk,
+    stride_cm,
     stride_As_m,
     stride_As_k,
     stride_Bs_k,
@@ -184,18 +202,28 @@ def w8a8_block_fp8_matmul_gemv_kernel(
         a_ptrs = A + row_offset[:, None] * stride_am + k_offset[None, :] * stride_ak
         a = tl.load(a_ptrs, mask=row_mask[:, None] & k_mask[None, :], other=0.0)
         b = tl.load(B + k_offset * stride_bk, mask=k_mask, other=0.0)
-
-        scale_k = k_start // group_k
-        a_s = tl.load(
-            As + row_offset * stride_As_m + scale_k * stride_As_k,
-            mask=row_mask,
+        a = a.to(tl.float32)
+        b = b.to(tl.float32)
+        scale_k_vec = k_offset // group_k
+        num_scale_k = tl.cdiv(K, group_k)
+        scale_k_vec = tl.where(
+            scale_k_vec < num_scale_k,
+            scale_k_vec,
+            num_scale_k - 1,
+        )
+        a_s_tile = tl.load(
+            As + row_offset[:, None] * stride_As_m + scale_k_vec[None, :] * stride_As_k,
+            mask=row_mask[:, None] & k_mask[None, :],
             other=0.0,
         )
-        b_s = tl.load(Bs + scale_k * stride_Bs_k)
+        b_s_tile = tl.load(Bs + scale_k_vec * stride_Bs_k, mask=k_mask, other=0.0)
+        acc += tl.sum(
+            a * a_s_tile * b[None, :] * b_s_tile[None, :],
+            axis=1,
+        )
 
-        acc += tl.sum(a.to(tl.float32) * b[None, :].to(tl.float32), axis=1) * a_s * b_s
-
-    tl.store(C + row_offset, acc.to(C.dtype.element_ty), mask=row_mask)
+    c_ptrs = C + row_offset * stride_cm
+    tl.store(c_ptrs, acc.to(C.dtype.element_ty), mask=row_mask)
 
 
 def sqmma_descriptor_pre_hook(nargs):
@@ -364,7 +392,6 @@ def general_w8a8_block_fp8_matmul(
             a_s.stride(1),
             b_s.stride(1),
             b_s.stride(0),
-            BLOCK_K=group_k,
         )
     return c
 
@@ -399,10 +426,10 @@ def gemv_w8a8_block_fp8_matmul(
             a.stride(0),
             a.stride(1),
             b.stride(1),
+            c.stride(0),
             a_s.stride(0),
             a_s.stride(1),
             b_s.stride(1),
-            BLOCK_K=group_k,
         )
     return c
 
