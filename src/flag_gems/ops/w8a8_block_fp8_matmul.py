@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_default_w8a8_block_fp8_config(block_n: int, block_k: int) -> Dict[str, Any]:
-    if flag_gems.vendor_name == "mthreads":
+    if flag_gems.device != "cuda":
         return {
             "BLOCK_SIZE_M": 64,
             "BLOCK_SIZE_N": 64,
