@@ -3,12 +3,34 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
+import flag_gems
 import torch
 import triton
 import triton.language as tl
 import yaml
 
 logger = logging.getLogger(__name__)
+
+
+def _get_default_w8a8_block_fp8_config(block_n: int, block_k: int) -> Dict[str, Any]:
+    if flag_gems.vendor_name == "mthreads":
+        return {
+            "BLOCK_SIZE_M": 64,
+            "BLOCK_SIZE_N": 64,
+            "BLOCK_SIZE_K": 128,
+            "GROUP_SIZE_M": 4,
+            "num_warps": 4,
+            "num_stages": 3,
+        }
+
+    return {
+        "BLOCK_SIZE_M": 64,
+        "BLOCK_SIZE_N": block_n,
+        "BLOCK_SIZE_K": block_k,
+        "GROUP_SIZE_M": 32,
+        "num_warps": 4,
+        "num_stages": 2,
+    }
 
 
 @triton.jit
@@ -67,7 +89,6 @@ def w8a8_block_fp8_matmul_kernel(
         offs_ks = k_start // group_k
         a_s = tl.load(As_ptrs + offs_ks * stride_As_k)
         b_s = tl.load(Bs_ptrs + offs_ks * stride_Bs_k)
-
         accumulator += tl.dot(a, b) * a_s[:, None] * b_s[None, :]
         a_ptrs += BLOCK_SIZE_K * stride_ak
         b_ptrs += BLOCK_SIZE_K * stride_bk
@@ -165,14 +186,7 @@ def w8a8_block_fp8_matmul(
     if configs:
         config = configs[min(configs.keys(), key=lambda x: abs(x - M))]
     else:
-        config = {
-            "BLOCK_SIZE_M": 64,
-            "BLOCK_SIZE_N": block_size[0],
-            "BLOCK_SIZE_K": block_size[1],
-            "GROUP_SIZE_M": 32,
-            "num_warps": 4,
-            "num_stages": 2,
-        }
+        config = _get_default_w8a8_block_fp8_config(block_n, block_k)
 
     def grid(META):
         return (
