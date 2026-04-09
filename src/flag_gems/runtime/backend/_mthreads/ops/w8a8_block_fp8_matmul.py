@@ -36,11 +36,10 @@ def should_skip_sqmma_for_shape(m, n, k):
     )
 
 
-def is_sqmma_compatible(a, b, output_dtype, n, k, group_n, group_k):
+def is_sqmma_compatible(a, b, output_dtype, n, k):
     m = a.shape[0]
     return (
-        os.getenv("MUSA_ENABLE_SQMMA", "0") == "1"
-        and a.dim() == 2
+        a.dim() == 2
         and b.dim() == 2
         and a.dtype == b.dtype == torch.float8_e4m3fn
         and output_dtype in (torch.float16, torch.bfloat16)
@@ -541,21 +540,36 @@ def w8a8_block_fp8_matmul(
     a_2d = A.reshape(M, K)
     as_2d = As.reshape(M, As.shape[-1])
     c_2d = c.reshape(M, N)
+    prev_sqmma = os.environ.get("MUSA_ENABLE_SQMMA")
+    os.environ["MUSA_ENABLE_SQMMA"] = "1"
+    try:
+        if N == 1:
+            return gemv_w8a8_block_fp8_matmul(
+                a_2d,
+                B,
+                c if c.ndim == 1 else c.squeeze(-1),
+                as_2d,
+                Bs,
+                M,
+                K,
+                block_k,
+            ).reshape(c.shape)
 
-    if N == 1:
-        return gemv_w8a8_block_fp8_matmul(
-            a_2d,
-            B,
-            c if c.ndim == 1 else c.squeeze(-1),
-            as_2d,
-            Bs,
-            M,
-            K,
-            block_k,
-        ).reshape(c.shape)
+        if is_sqmma_compatible(a_2d, B, output_dtype, N, K):
+            return sqmma_w8a8_block_fp8_matmul(
+                a_2d,
+                B,
+                c_2d,
+                as_2d,
+                Bs,
+                M,
+                N,
+                K,
+                block_n,
+                block_k,
+            ).reshape(c.shape)
 
-    if is_sqmma_compatible(a_2d, B, output_dtype, N, K, block_n, block_k):
-        return sqmma_w8a8_block_fp8_matmul(
+        return general_w8a8_block_fp8_matmul(
             a_2d,
             B,
             c_2d,
@@ -567,16 +581,8 @@ def w8a8_block_fp8_matmul(
             block_n,
             block_k,
         ).reshape(c.shape)
-
-    return general_w8a8_block_fp8_matmul(
-        a_2d,
-        B,
-        c_2d,
-        as_2d,
-        Bs,
-        M,
-        N,
-        K,
-        block_n,
-        block_k,
-    ).reshape(c.shape)
+    finally:
+        if prev_sqmma is None:
+            os.environ.pop("MUSA_ENABLE_SQMMA", None)
+        else:
+            os.environ["MUSA_ENABLE_SQMMA"] = prev_sqmma

@@ -842,13 +842,7 @@ def test_perf_w8a8_block_fp8_matmul_fp8():
         dtypes=["fp8"],
     )
     bench.set_gems(flag_gems.w8a8_block_fp8_matmul)
-    if flag_gems.vendor_name == "mthreads":
-        os.environ["MUSA_ENABLE_SQMMA"] = "1"
-    try:
-        bench.run()
-    finally:
-        if flag_gems.vendor_name == "mthreads":
-            del os.environ["MUSA_ENABLE_SQMMA"]
+    bench.run()
 
 
 @pytest.mark.w8a8_block_fp8_matmul_deepgemm
