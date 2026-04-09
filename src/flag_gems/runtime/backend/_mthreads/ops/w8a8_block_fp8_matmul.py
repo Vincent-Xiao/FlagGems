@@ -35,7 +35,6 @@ def is_sqmma_compatible(a, b, output_dtype, n, k, group_n, group_k):
         and k % 16 == 0
     )
 
-
 def get_triton_type(elem_type):
     type_map = {
         torch.float16: tl.float16,
@@ -107,59 +106,42 @@ def w8a8_block_fp8_matmul_kernel(
     offs_am = (pid_m * BLOCK_M + tl.arange(0, BLOCK_M)) % M
     offs_bn = (pid_n * BLOCK_N + tl.arange(0, BLOCK_N)) % N
     offs_k = tl.arange(0, BLOCK_K)
-    a_ptrs = A + offs_am[:, None] * stride_am + offs_k[None, :] * stride_ak
-    b_ptrs = B + offs_k[:, None] * stride_bk + offs_bn[None, :] * stride_bn
+    a_ptrs = A + (offs_am[:, None] * stride_am + offs_k[None, :] * stride_ak)
+    b_ptrs = B + (offs_k[:, None] * stride_bk + offs_bn[None, :] * stride_bn)
 
-    as_ptrs = As + offs_am * stride_As_m
-    bs_ptrs = Bs + (offs_bn // group_n) * stride_Bs_n
+    As_ptrs = As + offs_am * stride_As_m
+    offs_bsn = offs_bn // group_n
+    Bs_ptrs = Bs + offs_bsn * stride_Bs_n
 
-    acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
-    for k_start in range(0, tl.cdiv(K, BLOCK_K)):
-        global_k = k_start * BLOCK_K + offs_k
-        a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k_start * BLOCK_K, other=0.0)
-        b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k_start * BLOCK_K, other=0.0)
-        if BLOCK_K == group_k:
-            scale_k_scalar = k_start
-            a_s_scalar = tl.load(as_ptrs + scale_k_scalar * stride_As_k)
-            b_s_scalar = tl.load(bs_ptrs + scale_k_scalar * stride_Bs_k)
-            acc += tl.dot(a, b, out_dtype=tl.float32, allow_tf32=False) * a_s_scalar[
-                :, None
-            ] * b_s_scalar[None, :]
-        else:
-            scale_k_vec = global_k // group_k
-            num_scale_k = tl.cdiv(K, group_k)
-            scale_k_vec = tl.where(
-                scale_k_vec < num_scale_k,
-                scale_k_vec,
-                num_scale_k - 1,
-            )
-            a_s_tile = tl.load(as_ptrs[:, None] + scale_k_vec[None, :] * stride_As_k)
-            b_s_tile = tl.load(bs_ptrs[None, :] + scale_k_vec[:, None] * stride_Bs_k)
-            acc += tl.sum(
-                (a.to(tl.float32) * a_s_tile)[:, :, None]
-                * (b.to(tl.float32) * b_s_tile)[None, :, :],
-                axis=1,
-            )
+    accumulator = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+    for k in range(0, tl.cdiv(K, BLOCK_K)):
+        a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k * BLOCK_K, other=0.0)
+        b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k * BLOCK_K, other=0.0)
 
+        k_start = k * BLOCK_K
+        offs_ks = k_start // group_k
+        a_s = tl.load(As_ptrs + offs_ks * stride_As_k)
+        b_s = tl.load(Bs_ptrs + offs_ks * stride_Bs_k)
+        accumulator += tl.dot(a, b) * a_s[:, None] * b_s[None, :]
         a_ptrs += BLOCK_K * stride_ak
         b_ptrs += BLOCK_K * stride_bk
 
     if C.dtype.element_ty == tl.bfloat16:
-        c = acc.to(tl.bfloat16)
+        c = accumulator.to(tl.bfloat16)
     elif C.dtype.element_ty == tl.float16:
-        c = acc.to(tl.float16)
+        c = accumulator.to(tl.float16)
     else:
-        c = acc.to(tl.float32)
+        c = accumulator.to(tl.float32)
 
     offs_cm = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
     offs_cn = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
-    c_ptrs = C + offs_cm[:, None] * stride_cm + offs_cn[None, :] * stride_cn
-    c_mask = (offs_cm < M)[:, None] & (offs_cn < N)[None, :]
+    c_ptrs = C + stride_cm * offs_cm[:, None] + stride_cn * offs_cn[None, :]
+    c_mask = (offs_cm[:, None] < M) & (offs_cn[None, :] < N)
     tl.store(c_ptrs, c, mask=c_mask)
 
 
 def gemv_get_configs():
-    return [triton.Config({"BLOCK_M": 64, "BLOCK_K": 128}, num_stages=3, num_warps=4)]
+    return [triton.Config({"BLOCK_M": 64, "BLOCK_K": 64}, num_stages=3, num_warps=4)]
 
 
 @libentry()
@@ -202,25 +184,18 @@ def w8a8_block_fp8_matmul_gemv_kernel(
         a_ptrs = A + row_offset[:, None] * stride_am + k_offset[None, :] * stride_ak
         a = tl.load(a_ptrs, mask=row_mask[:, None] & k_mask[None, :], other=0.0)
         b = tl.load(B + k_offset * stride_bk, mask=k_mask, other=0.0)
-        a = a.to(tl.float32)
-        b = b.to(tl.float32)
-        scale_k_vec = k_offset // group_k
-        num_scale_k = tl.cdiv(K, group_k)
-        scale_k_vec = tl.where(
-            scale_k_vec < num_scale_k,
-            scale_k_vec,
-            num_scale_k - 1,
-        )
-        a_s_tile = tl.load(
-            As + row_offset[:, None] * stride_As_m + scale_k_vec[None, :] * stride_As_k,
-            mask=row_mask[:, None] & k_mask[None, :],
+        scale_k = k_start // group_k
+        a_s = tl.load(
+            As + row_offset * stride_As_m + scale_k * stride_As_k,
+            mask=row_mask,
             other=0.0,
         )
-        b_s_tile = tl.load(Bs + scale_k_vec * stride_Bs_k, mask=k_mask, other=0.0)
-        acc += tl.sum(
-            a * a_s_tile * b[None, :] * b_s_tile[None, :],
+        b_s = tl.load(Bs + scale_k * stride_Bs_k)
+        partial = tl.sum(
+            a.to(tl.float32) * b[None, :].to(tl.float32),
             axis=1,
         )
+        acc += partial * a_s * b_s
 
     c_ptrs = C + row_offset * stride_cm
     tl.store(c_ptrs, acc.to(C.dtype.element_ty), mask=row_mask)
