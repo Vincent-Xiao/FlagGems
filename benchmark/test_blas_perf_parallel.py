@@ -15,6 +15,7 @@ import benchmark.test_blas_perf as blas_perf
 import flag_gems
 from benchmark.attri_util import BenchmarkMetrics, BenchmarkResult, OperationAttribute
 from benchmark.conftest import Config, emit_record_logger
+
 try:
     from flag_gems.ops.fp8mm import fp8_matmul as fp8mm_baseline
 

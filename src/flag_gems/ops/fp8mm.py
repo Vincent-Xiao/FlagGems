@@ -34,14 +34,24 @@ NUM_WARPS = 4
 
 @triton.jit
 def _fp8_matmul_kernel(
-    A, B, C,
-    As, Bs,
-    M, N, K,
-    stride_am, stride_ak,
-    stride_bn, stride_bk,
-    stride_cm, stride_cn,
-    stride_as_m, stride_as_k,
-    stride_bs_n, stride_bs_k,
+    A,
+    B,
+    C,
+    As,
+    Bs,
+    M,
+    N,
+    K,
+    stride_am,
+    stride_ak,
+    stride_bn,
+    stride_bk,
+    stride_cm,
+    stride_cn,
+    stride_as_m,
+    stride_as_k,
+    stride_bs_n,
+    stride_bs_k,
     GROUP_K: tl.constexpr,
     BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
@@ -133,19 +143,27 @@ def fp8_matmul(
 
     C = torch.empty((M, N), device=a.device, dtype=torch.bfloat16)
 
-    grid = (
-        triton.cdiv(M, BLOCK_M) * triton.cdiv(N, BLOCK_N),
-    )
+    grid = (triton.cdiv(M, BLOCK_M) * triton.cdiv(N, BLOCK_N),)
 
     _fp8_matmul_kernel[grid](
-        a_2d, b, C,
-        a_s_2d, b_s,
-        M, N, K,
-        a_2d.stride(0), a_2d.stride(1),
-        b.stride(0), b.stride(1),
-        C.stride(0), C.stride(1),
-        a_s_2d.stride(0), a_s_2d.stride(1),
-        b_s.stride(0), b_s.stride(1),
+        a_2d,
+        b,
+        C,
+        a_s_2d,
+        b_s,
+        M,
+        N,
+        K,
+        a_2d.stride(0),
+        a_2d.stride(1),
+        b.stride(0),
+        b.stride(1),
+        C.stride(0),
+        C.stride(1),
+        a_s_2d.stride(0),
+        a_s_2d.stride(1),
+        b_s.stride(0),
+        b_s.stride(1),
         GROUP_K=GROUP_SIZE,
         BLOCK_M=BLOCK_M,
         BLOCK_N=BLOCK_N,
@@ -156,4 +174,3 @@ def fp8_matmul(
     )
 
     return C.view(out_shape)
-

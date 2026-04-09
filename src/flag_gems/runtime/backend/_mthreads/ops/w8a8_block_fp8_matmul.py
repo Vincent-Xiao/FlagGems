@@ -332,12 +332,16 @@ def w8a8_block_fp8_matmul_sqmma_kernel(
             mask=col_offset < N,
             other=0.0,
         )
-        acc += tl.dot(a, b, out_dtype=tl.float32, allow_tf32=False) * a_s[
-            :, None
-        ] * b_s[None, :]
+        acc += (
+            tl.dot(a, b, out_dtype=tl.float32, allow_tf32=False)
+            * a_s[:, None]
+            * b_s[None, :]
+        )
         offs_k += BLOCK_K
 
-    tl._experimental_descriptor_store(c_desc_ptr, acc.to(c_store_dtype), [offs_am, offs_bn])
+    tl._experimental_descriptor_store(
+        c_desc_ptr, acc.to(c_store_dtype), [offs_am, offs_bn]
+    )
 
 
 def general_w8a8_block_fp8_matmul(

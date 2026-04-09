@@ -3,11 +3,12 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-import flag_gems
 import torch
 import triton
 import triton.language as tl
 import yaml
+
+import flag_gems
 
 logger = logging.getLogger(__name__)
 
