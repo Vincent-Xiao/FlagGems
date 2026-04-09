@@ -16,13 +16,28 @@ logger = logging.getLogger(
     "flag_gems.runtime.backend._mthreads.ops.w8a8_block_fp8_matmul"
 )
 
+
 def is_supported_sqmma_layout(tensor):
     return tensor.is_contiguous() or (
         tensor.stride(0) == 1 and tensor.stride(1) == tensor.shape[0]
     )
 
 
+def should_skip_sqmma_for_shape(m, n, k):
+    # These small-M shape families regressed in pretune and should stay on the
+    # generic path until they get dedicated tuning.
+    return (
+        (m <= 512 and n <= 512 and k >= 4096)
+        or (m <= 256 and n >= 4096 and k <= 512)
+        or (m <= 256 and k == 1536 and n in (3072, 8192))
+        or (m <= 64 and k == 7168 and n in (2112, 4608))
+        or (m <= 64 and n == 7168 and k in (2048, 2304))
+        or (m <= 1028 and n == 128 and k == 7168)
+    )
+
+
 def is_sqmma_compatible(a, b, output_dtype, n, k, group_n, group_k):
+    m = a.shape[0]
     return (
         os.getenv("MUSA_ENABLE_SQMMA", "0") == "1"
         and a.dim() == 2
@@ -33,7 +48,9 @@ def is_sqmma_compatible(a, b, output_dtype, n, k, group_n, group_k):
         and is_supported_sqmma_layout(b)
         and n % 16 == 0
         and k % 16 == 0
+        and not should_skip_sqmma_for_shape(m, n, k)
     )
+
 
 def get_triton_type(elem_type):
     type_map = {
