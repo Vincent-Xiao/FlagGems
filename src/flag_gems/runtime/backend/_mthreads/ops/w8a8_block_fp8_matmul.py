@@ -16,6 +16,7 @@ logger = logging.getLogger(
     "flag_gems.runtime.backend._mthreads.ops.w8a8_block_fp8_matmul"
 )
 
+SQMMA_ON=True
 
 def is_supported_sqmma_layout(tensor):
     return tensor.is_contiguous() or (
@@ -48,6 +49,7 @@ def is_sqmma_compatible(a, b, output_dtype, n, k):
         and n % 16 == 0
         and k % 16 == 0
         and not should_skip_sqmma_for_shape(m, n, k)
+        and SQMMA_ON
     )
 
 
