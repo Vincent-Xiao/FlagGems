@@ -6,6 +6,7 @@ import torch
 import triton
 import triton.language as tl
 
+from flag_gems import runtime
 from flag_gems.runtime import torch_device_fn
 from flag_gems.utils import libentry, libtuner
 from flag_gems.utils import triton_lang_extension as tle
@@ -14,6 +15,13 @@ from .utils import create_tma_device_descriptor, get_cached_tma_device_descripto
 
 logger = logging.getLogger(
     "flag_gems.runtime.backend._mthreads.ops.w8a8_block_fp8_matmul"
+)
+EXPAND_CONFIG_FILENAME = os.path.normpath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "w8a8_block_fp8_matmul_mthreads_expand.yaml",
+    )
 )
 
 SQMMA_ON = False
@@ -81,9 +89,19 @@ def matmul_get_configs():
 
 @libentry()
 @libtuner(
-    configs=matmul_get_configs(),
+    configs=runtime.ops_get_configs(
+        "w8a8_block_fp8_general", pre_hook=None, yaml_path=EXPAND_CONFIG_FILENAME
+    )
+    if os.environ.get("USE_FLAGTUNE") == "1"
+    else matmul_get_configs(),
     key=["M", "N", "K", "stride_am", "stride_bk"],
-    strategy=["align32", "align32", "align32", "align32", "align32"],
+    strategy=runtime.get_expand_config(
+        "w8a8_block_fp8_general", yaml_path=EXPAND_CONFIG_FILENAME
+    )["strategy"]
+    if os.environ.get("USE_FLAGTUNE") == "1"
+    else ["align32", "align32", "align32", "align32", "align32"],
+    warmup=5,
+    rep=5,
 )
 @triton.jit
 def w8a8_block_fp8_matmul_kernel(
@@ -256,9 +274,21 @@ def sqmma_get_configs(pre_hook=sqmma_descriptor_pre_hook):
 
 @libentry()
 @libtuner(
-    configs=sqmma_get_configs(),
-    key=["M", "N", "K", "stride_As_m", "stride_Bs_n"],
-    strategy=["align32", "align32", "align32", "align32", "align32"],
+    configs=runtime.ops_get_configs(
+        "w8a8_block_fp8_general_tma",
+        pre_hook=sqmma_descriptor_pre_hook,
+        yaml_path=EXPAND_CONFIG_FILENAME,
+    )
+    if os.environ.get("USE_FLAGTUNE") == "1"
+    else sqmma_get_configs(),
+    key=["M", "N", "K", "stride_am", "stride_bk", "dtype"],
+    strategy=runtime.get_expand_config(
+        "w8a8_block_fp8_general_tma", yaml_path=EXPAND_CONFIG_FILENAME
+    )["strategy"]
+    if os.environ.get("USE_FLAGTUNE") == "1"
+    else ["align32", "align32", "align32", "align32", "align32", "default"],
+    warmup=5,
+    rep=5,
 )
 @triton.jit
 def w8a8_block_fp8_matmul_sqmma_kernel(
@@ -275,10 +305,13 @@ def w8a8_block_fp8_matmul_sqmma_kernel(
     K,
     group_n,
     group_k,
+    stride_am,
+    stride_bk,
     stride_As_m,
     stride_As_k,
     stride_Bs_n,
     stride_Bs_k,
+    dtype: tl.constexpr,
     input_dtype: tl.constexpr,
     output_dtype: tl.constexpr,
     GROUP_M: tl.constexpr,
@@ -473,8 +506,8 @@ def sqmma_w8a8_block_fp8_matmul(
     desc_b = torch.empty((64,), dtype=torch.int8, device=device)
     desc_c = torch.empty((64,), dtype=torch.int8, device=device)
 
-    grid = (
-        triton.cdiv(M, 64) * triton.cdiv(N, 64),
+    grid = lambda meta: (
+        triton.cdiv(M, meta["BLOCK_M"]) * triton.cdiv(N, meta["BLOCK_N"]),
         1,
         1,
     )
@@ -494,10 +527,13 @@ def sqmma_w8a8_block_fp8_matmul(
             K,
             group_n,
             group_k,
+            a.stride(0),
+            b.stride(1),
             a_s.stride(0),
             a_s.stride(1),
             b_s.stride(0),
             b_s.stride(1),
+            dtype=str(a.dtype).split(".")[-1],
             input_dtype=get_triton_type(a.dtype),
             output_dtype=get_triton_type(c.dtype),
             is_transpose_a=is_transpose_a,
