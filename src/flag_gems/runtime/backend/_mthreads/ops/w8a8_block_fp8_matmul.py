@@ -58,7 +58,7 @@ def is_sqmma_compatible(a, b, output_dtype, n, k):
         and is_supported_sqmma_layout(b)
         and n % 16 == 0
         and k % 16 == 0
-        and not should_skip_sqmma_for_shape(m, n, k)
+        # and not should_skip_sqmma_for_shape(m, n, k)
     )
 
 
@@ -175,67 +175,6 @@ def w8a8_block_fp8_matmul_kernel(
     c_ptrs = C + stride_cm * offs_cm[:, None] + stride_cn * offs_cn[None, :]
     c_mask = (offs_cm[:, None] < M) & (offs_cn[None, :] < N)
     tl.store(c_ptrs, c, mask=c_mask)
-
-
-def gemv_get_configs():
-    return [triton.Config({"BLOCK_M": 64, "BLOCK_K": 64}, num_stages=3, num_warps=4)]
-
-
-@libentry()
-@libtuner(
-    configs=gemv_get_configs(),
-    key=["M", "K", "stride_am", "stride_bk"],
-    strategy=["align32", "align32", "align32", "default"],
-)
-@triton.jit
-def w8a8_block_fp8_matmul_gemv_kernel(
-    A,
-    B,
-    C,
-    As,
-    Bs,
-    M,
-    K,
-    group_k,
-    stride_am,
-    stride_ak,
-    stride_bk,
-    stride_cm,
-    stride_As_m,
-    stride_As_k,
-    stride_Bs_k,
-    BLOCK_M: tl.constexpr,
-    BLOCK_K: tl.constexpr,
-):
-    pid = tle.program_id(0)
-
-    row_start = pid * BLOCK_M
-    row_offset = row_start + tl.arange(0, BLOCK_M)
-    row_mask = row_offset < M
-    acc = tl.zeros((BLOCK_M,), dtype=tl.float32)
-
-    for k_start in range(0, K, BLOCK_K):
-        k_offset = k_start + tl.arange(0, BLOCK_K)
-        k_mask = k_offset < K
-
-        a_ptrs = A + row_offset[:, None] * stride_am + k_offset[None, :] * stride_ak
-        a = tl.load(a_ptrs, mask=row_mask[:, None] & k_mask[None, :], other=0.0)
-        b = tl.load(B + k_offset * stride_bk, mask=k_mask, other=0.0)
-        scale_k = k_start // group_k
-        a_s = tl.load(
-            As + row_offset * stride_As_m + scale_k * stride_As_k,
-            mask=row_mask,
-            other=0.0,
-        )
-        b_s = tl.load(Bs + scale_k * stride_Bs_k)
-        partial = tl.sum(
-            a.to(tl.float32) * b[None, :].to(tl.float32),
-            axis=1,
-        )
-        acc += partial * a_s * b_s
-
-    c_ptrs = C + row_offset * stride_cm
-    tl.store(c_ptrs, acc.to(C.dtype.element_ty), mask=row_mask)
 
 
 def sqmma_descriptor_pre_hook(nargs):
@@ -427,44 +366,6 @@ def general_w8a8_block_fp8_matmul(
     return c
 
 
-def gemv_w8a8_block_fp8_matmul(
-    a,
-    b,
-    c,
-    a_s,
-    b_s,
-    M,
-    K,
-    group_k,
-):
-    logger.debug(
-        "GEMS_MTHREADS W8A8_BLOCK_FP8_MATMUL(gemv), [shape info]: [%s, %s, 1](M, K, N)",
-        M,
-        K,
-    )
-    grid = lambda meta: (triton.cdiv(M, meta["BLOCK_M"]),)
-
-    with torch_device_fn.device(a.device):
-        w8a8_block_fp8_matmul_gemv_kernel[grid](
-            a,
-            b,
-            c,
-            a_s,
-            b_s,
-            M,
-            K,
-            group_k,
-            a.stride(0),
-            a.stride(1),
-            b.stride(1),
-            c.stride(0),
-            a_s.stride(0),
-            a_s.stride(1),
-            b_s.stride(1),
-        )
-    return c
-
-
 def sqmma_w8a8_block_fp8_matmul(
     a,
     b,
@@ -582,18 +483,6 @@ def w8a8_block_fp8_matmul(
     prev_sqmma = os.environ.get("MUSA_ENABLE_SQMMA")
     os.environ["MUSA_ENABLE_SQMMA"] = "1"
     try:
-        if N == 1:
-            return gemv_w8a8_block_fp8_matmul(
-                a_2d,
-                B,
-                c if c.ndim == 1 else c.squeeze(-1),
-                as_2d,
-                Bs,
-                M,
-                K,
-                block_k,
-            ).reshape(c.shape)
-
         if is_sqmma_compatible(a_2d, B, output_dtype, N, K):
             return sqmma_w8a8_block_fp8_matmul(
                 a_2d,
