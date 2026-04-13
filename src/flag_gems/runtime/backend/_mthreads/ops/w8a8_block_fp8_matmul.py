@@ -33,19 +33,6 @@ def is_supported_sqmma_layout(tensor):
     )
 
 
-def should_skip_sqmma_for_shape(m, n, k):
-    # These small-M shape families regressed in pretune and should stay on the
-    # generic path until they get dedicated tuning.
-    return (
-        (m <= 512 and n <= 512 and k >= 4096)
-        or (m <= 256 and n >= 4096 and k <= 512)
-        or (m <= 256 and k == 1536 and n in (3072, 8192))
-        or (m <= 64 and k == 7168 and n in (2112, 4608))
-        or (m <= 64 and n == 7168 and k in (2048, 2304))
-        or (m <= 1028 and n == 128 and k == 7168)
-    )
-
-
 def is_sqmma_compatible(a, b, output_dtype, n, k):
     m = a.shape[0]
     return (
@@ -58,7 +45,6 @@ def is_sqmma_compatible(a, b, output_dtype, n, k):
         and is_supported_sqmma_layout(b)
         and n % 16 == 0
         and k % 16 == 0
-        # and not should_skip_sqmma_for_shape(m, n, k)
     )
 
 
