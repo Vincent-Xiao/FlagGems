@@ -1,7 +1,6 @@
 import functools
 import logging
 import os
-from contextlib import contextmanager
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -18,13 +17,18 @@ logger = logging.getLogger(
     "flag_gems.runtime.backend._nvidia.hopper.ops.w8a8_block_fp8_matmul"
 )
 CACHE_USAGE_THRESHOLD = 0.8
-EXPAND_CONFIG_FILENAME = "w8a8_block_fp8_matmul_hopper_expand.yaml"
+EXPAND_CONFIG_FILENAME = os.path.normpath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "w8a8_block_fp8_matmul_hopper_expand.yaml",
+    )
+)
 
+TMA_ON = False
 
 @functools.lru_cache
-def get_w8a8_block_fp8_hopper_configs(
-    N: int, K: int, block_n: int, block_k: int
-) -> Optional[Dict[int, Any]]:
+def get_w8a8_block_fp8_hopper_configs(N: int, K: int) -> Optional[Dict[int, Any]]:
     device_name = torch.cuda.get_device_name().replace(" ", "_")
     name_parts = device_name.split("_")
     if any(part.startswith("H20") for part in name_parts):
@@ -66,38 +70,44 @@ def get_w8a8_block_fp8_hopper_configs(
     return None
 
 
-def _build_fixed_matmul_config(config: Dict[str, int], pre_hook=None) -> triton.Config:
-    return triton.Config(
-        {
-            "BLOCK_M": config["BLOCK_SIZE_M"],
-            "BLOCK_N": config["BLOCK_SIZE_N"],
-            "BLOCK_K": config["BLOCK_SIZE_K"],
-            "GROUP_M": config["GROUP_SIZE_M"],
-        },
-        num_stages=config["num_stages"],
-        num_warps=config["num_warps"],
-        pre_hook=pre_hook,
-    )
-
-
-@contextmanager
-def _use_fixed_matmul_configs(config: Dict[str, int]):
-    general_tuner = w8a8_block_fp8_matmul_kernel_general.fn
-    host_tma_tuner = w8a8_block_fp8_matmul_kernel_host_tma.fn
-    general_configs = general_tuner.configs
-    host_tma_configs = host_tma_tuner.configs
-    general_tuner.configs = [_build_fixed_matmul_config(config)]
-    host_tma_tuner.configs = [
-        _build_fixed_matmul_config(
-            config,
-            pre_hook=matmul_tma_set_block_size_hook,
+def _get_placeholder_tuner_configs(pre_hook=None):
+    # Placeholder config for libtuner initialization before runtime shapes are known.
+    return [
+        triton.Config(
+            {
+                "BLOCK_M": 64,
+                "BLOCK_N": 64,
+                "BLOCK_K": 128,
+                "GROUP_M": 8,
+            },
+            num_stages=3,
+            num_warps=4,
+            pre_hook=pre_hook,
         )
     ]
-    try:
-        yield
-    finally:
-        general_tuner.configs = general_configs
-        host_tma_tuner.configs = host_tma_configs
+
+
+def _get_fixed_matmul_meta(M: int, N: int, K: int, block_n: int, block_k: int):
+    configs = get_w8a8_block_fp8_hopper_configs(N, K)
+    if not configs:
+        return {
+            "BLOCK_M": 64,
+            "BLOCK_N": block_n,
+            "BLOCK_K": block_k,
+            "GROUP_M": 32,
+            "num_warps": 4,
+            "num_stages": 2,
+        }
+
+    config = configs[min(configs.keys(), key=lambda x: abs(x - M))]
+    return {
+        "BLOCK_M": config["BLOCK_SIZE_M"],
+        "BLOCK_N": config["BLOCK_SIZE_N"],
+        "BLOCK_K": config["BLOCK_SIZE_K"],
+        "GROUP_M": config["GROUP_SIZE_M"],
+        "num_warps": config["num_warps"],
+        "num_stages": config["num_stages"],
+    }
 
 
 def is_tma_compatible(a, b, n, k):
@@ -118,6 +128,7 @@ def is_tma_compatible(a, b, n, k):
     return (
         a.dtype in (torch.float8_e4m3fn, torch.float8_e5m2)
         and b.dtype == a.dtype
+        and TMA_ON
         and n % 16 == 0
         and k % 16 == 0
     )
@@ -150,115 +161,24 @@ def matmul_tma_set_block_size_hook(nargs):
     nargs["c_desc"].block_shape = [BLOCK_M, BLOCK_N]
 
 
-def get_expand_config(op):
-    default_strategies = {
-        "matmul": ["align32", "align32", "align32", "align32", "align32", "default"],
-    }
-    op_key_orders = {
-        "matmul": ["M", "N", "K", "stride_am", "stride_bk", "dtype"],
-    }
-    op_meta_map = {
-        "matmul": {
-            "BM": "BLOCK_M",
-            "BN": "BLOCK_N",
-            "BK": "BLOCK_K",
-        },
-    }
-
-    if op not in default_strategies:
-        return -1
-
-    default_strategy = default_strategies[op]
-    config_path = os.path.join(os.path.dirname(__file__), "..", EXPAND_CONFIG_FILENAME)
-    if not os.path.exists(config_path):
-        return -1
-
-    try:
-        with open(config_path, "r") as file:
-            config = yaml.safe_load(file) or {}
-
-        expand_configs = config.get(op)
-
-        gen_config = None
-        strategy_config = None
-        for single_config in expand_configs:
-            if isinstance(single_config, dict) and "param_map" in single_config:
-                gen_config = single_config
-            if isinstance(single_config, dict) and "strategy" in single_config:
-                strategy_config = single_config.get("strategy")
-
-        param_map = gen_config["param_map"]
-        meta_map = param_map["META"]
-
-        strategy = default_strategy
-        if isinstance(strategy_config, dict):
-            strategy = [
-                strategy_config.get(k, default_strategy[idx])
-                for idx, k in enumerate(op_key_orders[op])
-            ]
-
-        ranges = {}
-        for range_key, meta_key in op_meta_map[op].items():
-            ranges[range_key] = gen_config[meta_map[meta_key]]
-        ranges["s"] = gen_config[param_map["num_stages"]]
-        ranges["w"] = gen_config[param_map["num_warps"]]
-
-        return {
-            "ranges": ranges,
-            "strategy": strategy,
-        }
-    except Exception:
-        return -1
-
-
-def matmul_get_configs(pre_hook=matmul_tma_set_block_size_hook):
-    if os.environ.get("USE_FLAGTUNE") == "1":
-        expand_config = get_expand_config("matmul")
-        if expand_config != -1:
-            logger.debug(
-                "Using expand configurations from %s for matmul kernel autotuning",
-                EXPAND_CONFIG_FILENAME,
-            )
-            ranges = expand_config["ranges"]
-            return [
-                triton.Config(
-                    {"BLOCK_M": BM, "BLOCK_N": BN, "BLOCK_K": BK},
-                    num_stages=s,
-                    num_warps=w,
-                    pre_hook=pre_hook,
-                )
-                for BM in ranges["BM"]
-                for BN in ranges["BN"]
-                for BK in ranges["BK"]
-                for s in ranges["s"]
-                for w in ranges["w"]
-            ]
-    return [
-        triton.Config(
-            {"BLOCK_M": BM, "BLOCK_N": BN, "BLOCK_K": BK},
-            num_stages=s,
-            num_warps=w,
-            pre_hook=pre_hook,
-        )
-        for BM in [32, 64, 128, 256]
-        for BN in [32, 64, 128]
-        for BK in [32, 64, 128]
-        for s in [2, 3, 4]
-        for w in [4, 8]
-    ]
-
 
 @libentry()
 @libtuner(
-    configs=matmul_get_configs(pre_hook=None)
+    configs=runtime.ops_get_configs(
+        "w8a8_block_fp8_general",
+        pre_hook=None,
+        yaml_path=EXPAND_CONFIG_FILENAME,
+    )
     if os.environ.get("USE_FLAGTUNE") == "1"
-    else runtime.get_tuned_config("mm"),
+    else _get_placeholder_tuner_configs(pre_hook=None),
     key=["M", "N", "K", "stride_am", "stride_bk"],
-    strategy=get_expand_config("matmul")["strategy"]
+    strategy=runtime.get_expand_config(
+        "w8a8_block_fp8_general", yaml_path=EXPAND_CONFIG_FILENAME
+    )["strategy"]
     if os.environ.get("USE_FLAGTUNE") == "1"
-    else ["default", "default", "default", "default", "default"],
+    else ["align32", "align32", "align32", "align32", "align32"],
     warmup=5,
-    rep=10,
+    rep=5,
 )
 @triton.jit
 def w8a8_block_fp8_matmul_kernel_general(
@@ -282,7 +202,6 @@ def w8a8_block_fp8_matmul_kernel_general(
     stride_As_k,
     stride_Bs_n,
     stride_Bs_k,
-    dtype: tl.constexpr,
     BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
     BLOCK_K: tl.constexpr,
@@ -392,9 +311,17 @@ def w8a8_block_fp8_matmul_kernel_general(
 
 @libentry()
 @libtuner(
-    configs=matmul_get_configs(),
+    configs=runtime.ops_get_configs(
+        "w8a8_block_fp8_general_tma",
+        pre_hook=matmul_tma_set_block_size_hook,
+        yaml_path=EXPAND_CONFIG_FILENAME,
+    )
+    if os.environ.get("USE_FLAGTUNE") == "1"
+    else _get_placeholder_tuner_configs(pre_hook=matmul_tma_set_block_size_hook),
     key=["M", "N", "K", "stride_am", "stride_bk", "dtype"],
-    strategy=get_expand_config("matmul")["strategy"]
+    strategy=runtime.get_expand_config(
+        "w8a8_block_fp8_general_tma", yaml_path=EXPAND_CONFIG_FILENAME
+    )["strategy"]
     if os.environ.get("USE_FLAGTUNE") == "1"
     else ["align32", "align32", "align32", "align32", "align32", "default"],
     warmup=5,
@@ -492,12 +419,12 @@ def general_w8a8_block_fp8_matmul(a, b, c, a_s, b_s, M, N, K, group_n, group_k):
     grid = lambda meta: (
         triton.cdiv(M, meta["BLOCK_M"]) * triton.cdiv(N, meta["BLOCK_N"]),
     )
-    dtype_str = str(a.dtype).split(".")[-1]
-    fixed_config = None
-    if os.environ.get("USE_FLAGTUNE") != "1":
-        configs = get_w8a8_block_fp8_hopper_configs(N, K, group_n, group_k)
-        if configs:
-            fixed_config = configs[min(configs.keys(), key=lambda x: abs(x - M))]
+    use_flagtune = os.environ.get("USE_FLAGTUNE") == "1"
+    fixed_meta = (
+        None
+        if use_flagtune
+        else _get_fixed_matmul_meta(M, N, K, block_n=group_n, block_k=group_k)
+    )
 
     if hasattr(
         triton.tools.tensor_descriptor, "TensorDescriptor"
@@ -519,89 +446,133 @@ def general_w8a8_block_fp8_matmul(a, b, c, a_s, b_s, M, N, K, group_n, group_k):
             b_desc = TensorDescriptor(b.T, b.T.shape, b.T.stride(), dummy_block)
 
         c_desc = TensorDescriptor(c, c.shape, c.stride(), dummy_block)
-        kernel_kwargs = {
-            "GROUP_M": 8,
-            "A_ROW_MAJOR": a_row_major,
-            "B_ROW_MAJOR": b_row_major,
-            "dtype": dtype_str,
-        }
-        if fixed_config is not None:
-            kernel_kwargs.pop("GROUP_M")
-
-        launch = lambda: w8a8_block_fp8_matmul_kernel_host_tma[grid](
-            a_desc,
-            b_desc,
-            c_desc,
-            a_s,
-            b_s,
-            M,
-            N,
-            K,
-            group_n,
-            group_k,
-            a.stride(0),
-            a.stride(1),
-            b.stride(0),
-            b.stride(1),
-            c.stride(0),
-            c.stride(1),
-            a_s.stride(0),
-            a_s.stride(1),
-            b_s.stride(0),
-            b_s.stride(1),
-            **kernel_kwargs,
-        )
-
-        if fixed_config is not None:
-            with _use_fixed_matmul_configs(fixed_config):
-                with torch_device_fn.device(a.device):
-                    launch()
+        if use_flagtune:
+            launch = lambda: w8a8_block_fp8_matmul_kernel_host_tma[grid](
+                a_desc,
+                b_desc,
+                c_desc,
+                a_s,
+                b_s,
+                M,
+                N,
+                K,
+                group_n,
+                group_k,
+                a.stride(0),
+                a.stride(1),
+                b.stride(0),
+                b.stride(1),
+                c.stride(0),
+                c.stride(1),
+                a_s.stride(0),
+                a_s.stride(1),
+                b_s.stride(0),
+                b_s.stride(1),
+                A_ROW_MAJOR=a_row_major,
+                B_ROW_MAJOR=b_row_major,
+                dtype=str(a.dtype).split(".")[-1],
+            )
         else:
-            with torch_device_fn.device(a.device):
-                launch()
+            # The fixed-config path bypasses libtuner, so we must apply the
+            # descriptor block-shape update that would normally run via the
+            # TMA pre_hook before launching the underlying JIT kernel.
+            matmul_tma_set_block_size_hook(
+                {
+                    "BLOCK_M": fixed_meta["BLOCK_M"],
+                    "BLOCK_N": fixed_meta["BLOCK_N"],
+                    "BLOCK_K": fixed_meta["BLOCK_K"],
+                    "a_desc": a_desc,
+                    "b_desc": b_desc,
+                    "c_desc": c_desc,
+                    "A_ROW_MAJOR": a_row_major,
+                    "B_ROW_MAJOR": b_row_major,
+                }
+            )
+            launch = lambda: w8a8_block_fp8_matmul_kernel_host_tma.fn.fn[grid](
+                a_desc,
+                b_desc,
+                c_desc,
+                a_s,
+                b_s,
+                M,
+                N,
+                K,
+                group_n,
+                group_k,
+                a.stride(0),
+                a.stride(1),
+                b.stride(0),
+                b.stride(1),
+                c.stride(0),
+                c.stride(1),
+                a_s.stride(0),
+                a_s.stride(1),
+                b_s.stride(0),
+                b_s.stride(1),
+                A_ROW_MAJOR=a_row_major,
+                B_ROW_MAJOR=b_row_major,
+                dtype=str(a.dtype).split(".")[-1],
+                **fixed_meta,
+            )
+
+        with torch_device_fn.device(a.device):
+            launch()
     else:
 
         def alloc_fn(size: int, align: int, stream: Optional[int]):
             return torch.empty(size, dtype=torch.int8, device=a.device)
 
         triton.set_allocator(alloc_fn)
-        kernel_kwargs = {
-            "dtype": dtype_str,
-            "GROUP_M": 8,
-        }
-        if fixed_config is not None:
-            kernel_kwargs.pop("GROUP_M")
-
-        launch = lambda: w8a8_block_fp8_matmul_kernel_general[grid](
-            a,
-            b,
-            c,
-            a_s,
-            b_s,
-            M,
-            N,
-            K,
-            group_n,
-            group_k,
-            a.stride(0),
-            a.stride(1),
-            b.stride(0),
-            b.stride(1),
-            c.stride(0),
-            c.stride(1),
-            a_s.stride(0),
-            a_s.stride(1),
-            b_s.stride(0),
-            b_s.stride(1),
-            **kernel_kwargs,
-        )
-        if fixed_config is not None:
-            with _use_fixed_matmul_configs(fixed_config):
-                with torch_device_fn.device(a.device):
-                    launch()
+        if use_flagtune:
+            launch = lambda: w8a8_block_fp8_matmul_kernel_general[grid](
+                a,
+                b,
+                c,
+                a_s,
+                b_s,
+                M,
+                N,
+                K,
+                group_n,
+                group_k,
+                a.stride(0),
+                a.stride(1),
+                b.stride(0),
+                b.stride(1),
+                c.stride(0),
+                c.stride(1),
+                a_s.stride(0),
+                a_s.stride(1),
+                b_s.stride(0),
+                b_s.stride(1),
+            )
         else:
-            with torch_device_fn.device(a.device):
-                launch()
+            launch = lambda: w8a8_block_fp8_matmul_kernel_general.fn.fn[grid](
+                a,
+                b,
+                c,
+                a_s,
+                b_s,
+                M,
+                N,
+                K,
+                group_n,
+                group_k,
+                a.stride(0),
+                a.stride(1),
+                b.stride(0),
+                b.stride(1),
+                c.stride(0),
+                c.stride(1),
+                a_s.stride(0),
+                a_s.stride(1),
+                b_s.stride(0),
+                b_s.stride(1),
+                **fixed_meta,
+            )
+
+        with torch_device_fn.device(a.device):
+            launch()
     return c
 
 def w8a8_block_fp8_matmul(
