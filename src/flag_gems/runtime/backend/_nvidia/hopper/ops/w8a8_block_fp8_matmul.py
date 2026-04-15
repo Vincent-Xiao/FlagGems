@@ -153,20 +153,14 @@ def matmul_tma_set_block_size_hook(nargs):
 def get_expand_config(op):
     default_strategies = {
         "matmul": ["align32", "align32", "align32", "align32", "align32", "default"],
-        "gemv": ["align32", "align32", "align32", "default"],
     }
     op_key_orders = {
         "matmul": ["M", "N", "K", "stride_am", "stride_bk", "dtype"],
-        "gemv": ["M", "K", "stride_am", "stride_bk"],
     }
     op_meta_map = {
         "matmul": {
             "BM": "BLOCK_M",
             "BN": "BLOCK_N",
-            "BK": "BLOCK_K",
-        },
-        "gemv": {
-            "BM": "BLOCK_M",
             "BK": "BLOCK_K",
         },
     }
@@ -485,102 +479,6 @@ def w8a8_block_fp8_matmul_kernel_host_tma(
 
     c_desc.store([offset_am, offset_bn], acc.to(c_desc.dtype))
 
-
-def gemv_get_configs():
-    if os.environ.get("USE_FLAGTUNE") == "1":
-        expand_config = get_expand_config("gemv")
-        if expand_config != -1:
-            logger.debug(
-                "Using expand configurations from %s for gemv kernel autotuning",
-                EXPAND_CONFIG_FILENAME,
-            )
-            ranges = expand_config["ranges"]
-            return [
-                triton.Config(
-                    {"BLOCK_M": BM, "BLOCK_K": BK},
-                    num_stages=s,
-                    num_warps=w,
-                )
-                for BM in ranges["BM"]
-                for BK in ranges["BK"]
-                for s in ranges["s"]
-                for w in ranges["w"]
-            ]
-    return [
-        triton.Config(
-            {"BLOCK_M": 32, "BLOCK_K": 256},
-        )
-    ]
-
-
-@libentry()
-@libtuner(
-    configs=gemv_get_configs(),
-    key=["M", "K", "stride_am", "stride_bk"],
-    strategy=get_expand_config("gemv")["strategy"]
-    if os.environ.get("USE_FLAGTUNE") == "1"
-    else ["align32", "align32", "align32", "default"],
-    warmup=5,
-    rep=10,
-)
-@triton.jit
-def w8a8_block_fp8_matmul_gemv_kernel(
-    A,
-    B,
-    C,
-    As,
-    Bs,
-    M,
-    K,
-    group_k,
-    stride_am,
-    stride_ak,
-    stride_bk,
-    stride_As_m,
-    stride_As_k,
-    stride_Bs_k,
-    BLOCK_M: tl.constexpr,
-    BLOCK_K: tl.constexpr,
-):
-    """Optimized kernel for matrix-vector multiplication (N=1 case)"""
-    pid = tl.program_id(0)
-
-    # Each program handles BLOCK_M rows
-    row_start = pid * BLOCK_M
-    row_offset = row_start + tl.arange(0, BLOCK_M)
-    row_mask = row_offset < M
-
-    # Accumulator for this block of rows
-    acc = tl.zeros((BLOCK_M,), dtype=tl.float32)
-
-    # Iterate over K dimension
-    for k_start in range(0, K, BLOCK_K):
-        k_offset = k_start + tl.arange(0, BLOCK_K)
-        k_mask = k_offset < K
-
-        # Load block from matrix A: [BLOCK_M, BLOCK_K]
-        a_ptrs = A + row_offset[:, None] * stride_am + k_offset[None, :] * stride_ak
-        a = tl.load(a_ptrs, mask=row_mask[:, None] & k_mask[None, :], other=0.0)
-
-        # Load block from vector B: [BLOCK_K]
-        b_ptrs = B + k_offset * stride_bk
-        b = tl.load(b_ptrs, mask=k_mask, other=0.0)
-        offs_ks = k_start // group_k
-        a_s = tl.load(
-            As + row_offset * stride_As_m + offs_ks * stride_As_k,
-            mask=row_mask,
-            other=0.0,
-        )
-        b_s = tl.load(Bs + offs_ks * stride_Bs_k)
-
-        # Dequantize each K block on the fly and accumulate in fp32.
-        partial = tl.sum(a.to(tl.float32) * b[None, :].to(tl.float32), axis=1)
-        acc += partial * a_s * b_s
-
-    # Store result
-    tl.store(C + row_offset, acc.to(C.dtype.element_ty), mask=row_mask)
-
-
 def general_w8a8_block_fp8_matmul(a, b, c, a_s, b_s, M, N, K, group_n, group_k):
     logger.debug(
         "GEMS w8a8_block_fp8_matmul-hopper, [scenario]: general, [shape info]: [-, %s, %s, %s](batch, M, N, K), "
@@ -706,36 +604,6 @@ def general_w8a8_block_fp8_matmul(a, b, c, a_s, b_s, M, N, K, group_n, group_k):
                 launch()
     return c
 
-
-def gemv_w8a8_block_fp8_matmul(a, b, c, a_s, b_s, M, K, group_k):
-    """Optimized matrix-vector multiplication for N=1 case"""
-    logger.debug(
-        "GEMS w8a8_block_fp8_matmul-hopper, [scenario]: gemv (N=1), [shape info]: [%s, %s, 1](M, K, N)",
-        M,
-        K,
-    )
-    grid = lambda meta: (triton.cdiv(M, meta["BLOCK_M"]),)
-
-    with torch_device_fn.device(a.device):
-        w8a8_block_fp8_matmul_gemv_kernel[grid](
-            a,
-            b,
-            c,
-            a_s,
-            b_s,
-            M,
-            K,
-            group_k,
-            a.stride(0),
-            a.stride(1),
-            b.stride(1),
-            a_s.stride(0),
-            a_s.stride(1),
-            b_s.stride(1),
-        )
-    return c
-
-
 def w8a8_block_fp8_matmul(
     A: torch.Tensor,
     B: torch.Tensor,
@@ -776,19 +644,6 @@ def w8a8_block_fp8_matmul(
     a_2d = A.reshape(M, K)
     as_2d = As.reshape(M, As.shape[-1])
     c_2d = c.reshape(M, N)
-
-    # Optimize for N=1 case (matrix-vector multiplication)
-    if N == 1:
-        return gemv_w8a8_block_fp8_matmul(
-            a_2d,
-            B,
-            c if c.ndim == 1 else c.squeeze(-1),
-            as_2d,
-            Bs,
-            M,
-            K,
-            block_k,
-        ).reshape(c.shape)
 
     return general_w8a8_block_fp8_matmul(
         a_2d,
