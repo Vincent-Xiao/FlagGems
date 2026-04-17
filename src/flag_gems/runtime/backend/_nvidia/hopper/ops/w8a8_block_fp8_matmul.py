@@ -26,6 +26,7 @@ EXPAND_CONFIG_FILENAME = os.path.normpath(
 
 TMA_ON = False
 
+
 @functools.lru_cache
 def get_w8a8_block_fp8_hopper_configs(N: int, K: int) -> Optional[Dict[int, Any]]:
     device_name = torch.cuda.get_device_name().replace(" ", "_")
@@ -152,7 +153,6 @@ def matmul_tma_set_block_size_hook(nargs):
         nargs["b_desc"].block_shape = [BLOCK_K, BLOCK_N]
 
     nargs["c_desc"].block_shape = [BLOCK_M, BLOCK_N]
-
 
 
 @libentry()
@@ -344,6 +344,7 @@ def w8a8_block_fp8_matmul_kernel_host_tma(
 
     c_desc.store([offset_am, offset_bn], acc.to(c_desc.dtype))
 
+
 def general_w8a8_block_fp8_matmul(a, b, c, a_s, b_s, M, N, K, group_n, group_k):
     logger.debug(
         "GEMS w8a8_block_fp8_matmul-hopper, [scenario]: general, [shape info]: [-, %s, %s, %s](batch, M, N, K), "
@@ -512,6 +513,7 @@ def general_w8a8_block_fp8_matmul(a, b, c, a_s, b_s, M, N, K, group_n, group_k):
         with torch_device_fn.device(a.device):
             launch()
     return c
+
 
 def w8a8_block_fp8_matmul(
     A: torch.Tensor,
