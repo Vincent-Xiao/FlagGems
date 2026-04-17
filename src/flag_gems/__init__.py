@@ -20,48 +20,7 @@ vendor_name = runtime.device.vendor_name
 aten_lib = torch.library.Library("aten", "IMPL")
 registrar = Register
 current_work_registrar = None
-_generic_w8a8_block_fp8_matmul = globals().get("w8a8_block_fp8_matmul")
 runtime.replace_customized_ops(globals())
-_specialized_w8a8_block_fp8_matmul = globals().get("w8a8_block_fp8_matmul")
-
-
-def _is_hopper_arch():
-    try:
-        event = runtime.backend.BackendArchEvent()
-        return (
-            runtime.device.vendor_name == "nvidia" and event.has_arch and event.arch == "hopper"
-        )
-    except Exception:
-        return False
-
-
-if (
-    _generic_w8a8_block_fp8_matmul is not None
-    and _specialized_w8a8_block_fp8_matmul is not None
-):
-
-    def w8a8_block_fp8_matmul(
-        A,
-        B,
-        As,
-        Bs,
-        block_size,
-        output_dtype=torch.float16,
-    ):
-        if _is_hopper_arch():
-            try:
-                if len(block_size) == 2 and B.ndim == 2 and A.shape[-1] == B.shape[-1]:
-                    M = A.numel() // A.shape[-1]
-                    K = B.shape[1]
-                    if M <= 1028 and K <= 2304:
-                        return _generic_w8a8_block_fp8_matmul(
-                            A, B, As, Bs, block_size, output_dtype
-                        )
-            except Exception:
-                pass
-        return _specialized_w8a8_block_fp8_matmul(
-            A, B, As, Bs, block_size, output_dtype
-        )
 
 
 def torch_ge(v):
